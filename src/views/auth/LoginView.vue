@@ -1,48 +1,29 @@
 <script setup>
-import { ref } from 'vue'
+import AppLayout from '@/components/layout/AppLayout.vue'
+import { useDisplay } from 'vuetify'
 
-const theme = ref('light')
-
-function onClick() {
-  theme.value = theme.value === 'light' ? 'dark' : 'light'
-}
+const { mobile } = useDisplay()
 </script>
 
 <template>
-  <v-responsive class="border rounded">
-    <v-app :theme="theme">
-      <v-app-bar class="px-3" color="grey-darken-3">
-        <v-spacer></v-spacer>
-
-        <v-btn
-          :prepend-icon="theme === 'light' ? 'mdi-weather-sunny' : 'mdi-weather-night'"
-
-          slim
-          @click="onClick"
-        ></v-btn>
-      </v-app-bar>
-
-      <v-main>
-        <v-container>
-          <v-row>
+<AppLayout>
+  <template #content>
+      <v-row>
             <v-col col="12" md="6" class="mx-auto">
-              <v-card
-                class="mx-auto"
-                prepend-icon="mdi-account-circle"
-                subtitle="Login to your account"
-                width="400"
-                elevation="15"
-              >
-                <template v-slot:title>
-                  <span class="font-weight-black">CCIS BookMate</span>
-                </template>
+              <v-card class="mx-auto"width="400"elevation="15">
+                <v-card-title class="text-center">
+                  <v-img class="mx-auto" src="public/img/BM logo copy.png" :width ="mobile ? '65%' : '25%'"></v-img>
+                  <h3>CCIS BookMate</h3>
+                  <p style="font-size: 14px;">Login to your account</p>
+                </v-card-title>
 
+                <v-divider></v-divider>
                 <v-card-text class="bg-surface-light pt-4">
                   <v-form fast-fail @submit.prevent>
                     <v-text-field label="Email" variant="outlined"></v-text-field>
                     <v-text-field label="Password" type ="password" variant="outlined"></v-text-field>
 
-                    <v-btn class="mt-2" type="submit" block>Login</v-btn>
+                    <v-btn class="mt-2" type="submit" block color="primary" prepend-icon="mdi-login">Login</v-btn>
                   </v-form>
                   <v-divider class="my-4"></v-divider>
                   <h4 class="text-center">Don't have an account?<RouterLink to ="/register"> Register</RouterLink></h4>
@@ -50,10 +31,7 @@ function onClick() {
               </v-card>
             </v-col>
           </v-row>
-        </v-container>
-      </v-main>
+  </template>
+</AppLayout>
 
-      <v-footer border app color="grey-darken-3">Copyright &copy; 2025 BookMate</v-footer>
-    </v-app>
-  </v-responsive>
 </template>
