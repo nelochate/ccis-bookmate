@@ -10,7 +10,7 @@ const { mobile } = useDisplay()
 <AppLayout>
   <template #content>
       <v-row>
-            <v-col col="12" md="6" class="mx-auto">
+            <v-col col="12" md="6" class="d-flex justify-center">
               <v-card class="mx-auto"width="400"elevation="15">
                 <v-card-title class="text-center">
                   <v-img class="mx-auto" src="img/logo-round.png" :width ="mobile ? '65%' : '25%'"></v-img>
