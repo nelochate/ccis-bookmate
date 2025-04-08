@@ -13,7 +13,7 @@ const { mobile } = useDisplay()
             <v-col col="12" md="6" class="d-flex justify-center">
               <v-card class="mx-auto" width="400" elevation="15">
                 <v-card-title class="text-center">
-                  <v-img class="mx-auto" src="img/logo-round.png" :width ="mobile ? '65%' : '25%'"></v-img>
+                  <v-img class="mx-auto" src="img/logo-nobg.png" :width ="mobile ? '50%' : '25%'"></v-img>
                   <h3>CCIS BookMate</h3>
                   <p style="font-size: 14px;">Register to create an account</p>
                 </v-card-title>
