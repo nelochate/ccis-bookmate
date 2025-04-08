@@ -11,12 +11,12 @@ function onClick() {
 <template>
   <v-responsive class="border rounded">
     <v-app :theme="theme">
-      <v-app-bar class="px-3" color="blue-grey-darken-4">
+      <v-app-bar class="px-3" :color="theme === 'light' ? 'blue-grey-lighten-5' : 'blue-grey-darken-4'">
         <v-spacer></v-spacer>
 
         <v-btn
-          :prepend-icon="theme === 'light' ? 'mdi-weather-sunny' : 'mdi-weather-night'"
-
+          :icon="theme === 'light' ? 'mdi-weather-sunny' : 'mdi-weather-night'"
+          variant="elevated"
           slim
           @click="onClick"
         ></v-btn>
@@ -28,7 +28,7 @@ function onClick() {
         </v-container>
       </v-main>
 
-      <v-footer border app color="blue-grey-darken-4" class="d-flex justify-center">Copyright &copy; 2025 CCIS BookMate</v-footer>
+      <v-footer border app :color="theme === 'light' ? 'blue-grey-lighten-5' : 'blue-grey-darken-4'" class="d-flex justify-center" elevation ="20">Copyright &copy; 2025 CCIS BookMate</v-footer>
     </v-app>
   </v-responsive>
 </template>
