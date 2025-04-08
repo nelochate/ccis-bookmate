@@ -1,15 +1,16 @@
 <script setup>
 import { ref } from 'vue'
 
-const theme = ref('light')
+const theme = ref(localStorage.getItem('theme') ?? 'light')
 
 function onClick() {
   theme.value = theme.value === 'light' ? 'dark' : 'light'
+  localStorage.setItem('theme', theme.value)
 }
 </script>
 
 <template>
-  <v-responsive class="border rounded">
+  <v-responsive>
     <v-app :theme="theme">
       <v-app-bar class="px-3" :color="theme === 'light' ? 'blue-grey-lighten-5' : 'blue-grey-darken-4'">
         <v-spacer></v-spacer>
