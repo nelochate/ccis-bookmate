@@ -28,7 +28,6 @@ const { mobile } = useDisplay()
                 Easily book and manage facilities within the CCIS building — your centralized
                 platform for hassle-free scheduling and access.
               </p>
-            >
           </v-card>
         </v-col>
 
