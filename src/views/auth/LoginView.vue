@@ -11,14 +11,14 @@ const { mobile } = useDisplay()
   <AppLayout>
     <template #content>
       <v-row class="d-flex justify-center">
-        <v-col cols="12" md="6" class="pa-8 d-flex justify-center align-center">
-          <v-card class="pa-6 text-center elevation-0 rounded-x0" max-width="600" color="transparent">
+        <v-col cols="12" md="6" class="d-flex justify-center">
+          <v-card class="pa-3 text-center elevation-0 rounded-x0" max-width="600" color="transparent">
             <v-img
               class="mb-6 rounded-lg"
               src="img/CSU_Hiraya_Hall.jpg"
               :width="mobile ? '100%' : '100%'"
               height="auto"
-              contain
+              style=" box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);"
             ></v-img>
             <h2 class="font-weight-bold text-h5 mb-3">Welcome to CCIS BookMate</h2>
             <p class="text-body-1 text-medium-emphasis">
