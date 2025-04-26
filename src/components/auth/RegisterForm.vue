@@ -7,6 +7,7 @@ import {
 } from '@/utils/validators'
 import { ref } from 'vue'
 import { supabase, formActionDefault } from '@/utils/supabase.js'
+import AlertNotification from '@/components/common/AlertNotification.vue'
 
 const formDataDefault = {
   firstName: '',
@@ -26,9 +27,6 @@ const formAction = ref({
 
 const refVform = ref()
 
-const isSubmitting = ref(false);
-    const lastSubmitTime = ref(0);
-    const minTimeBetweenSubmits = 3000; // 3 seconds
 const onSubmit = async () => {
   formAction.value = { ...formActionDefault }
   formAction.value.formProcess = true
@@ -54,27 +52,6 @@ const onSubmit = async () => {
   }
 
   formAction.value.formProcess = false
-
-  const currentTime = Date.now();
-        if (isSubmitting.value || currentTime - lastSubmitTime.value < minTimeBetweenSubmits) {
-          // If the previous request is still in progress or if the interval is less than 3 seconds
-          return; // Exit and prevent submitting
-        }
-
-        isSubmitting.value = true;
-        lastSubmitTime.value = currentTime;
-
-        try {
-          // Your Supabase signup code here
-          await yourSupabaseClient.auth.signUp({
-             // Your credentials
-          });
-        } catch (error) {
-          console.error('Error signing up:', error);
-          // Handle errors
-        } finally {
-          isSubmitting.value = false;
-        }
 }
 
 
@@ -94,27 +71,10 @@ const visible2 = ref(false)
 </script>
 
 <template>
-  <v-alert
-    v-if="formAction.formSuccessMessage"
-    :text="formAction.formSuccessMessage"
-    title="Success"
-    type="success"
-    variant="tonal"
-    density="compact"
-    border="start"
-    closable
-  ></v-alert>
-
-  <v-alert
-    v-if="formAction.formErrorMessage"
-    :text="formAction.formErrorMessage"
-    title="Ooops!"
-    type="error"
-    variant="tonal"
-    density="compact"
-    border="start"
-    closable
-  ></v-alert>
+  <AlertNotification 
+  :formSuccessMessage="formAction.formSuccessMessage" 
+  :formErrorMessage="formAction.formErrorMessage">
+</AlertNotification>
 
   <v-form ref="refVform" @submit.prevent="onFormSubmit">
     <v-row>
