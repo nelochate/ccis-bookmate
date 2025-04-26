@@ -15,7 +15,7 @@ const { mobile } = useDisplay()
           <v-card class="pa-3 text-center elevation-0 rounded-x0" max-width="600" color="transparent">
             <v-img
               class="mb-6 rounded-lg"
-              src="img/CSU_Hiraya_Hall.jpg"
+              src="img/Hiraya.png"
               :width="mobile ? '100%' : '100%'"
               height="auto"
               style=" box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);"
