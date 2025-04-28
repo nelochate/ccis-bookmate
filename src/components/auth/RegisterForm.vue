@@ -49,6 +49,7 @@ const onSubmit = async () => {
   } else if (data) {
     console.log(data)
     formAction.value.formSuccessMessage = 'Registration successful'
+    refVform.value?.reset()
   }
 
   formAction.value.formProcess = false
