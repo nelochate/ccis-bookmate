@@ -50,7 +50,7 @@ const facilities = ref([
     capacity: '20 persons',
     location: 'CCIS 4th Floor',
     available: true,
-    image: '/img/conference-room.jpg',
+    image: 'public/img/conference room.jpg',
     type: 'conference_room'
   }
 ])
