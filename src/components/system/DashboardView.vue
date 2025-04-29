@@ -9,7 +9,7 @@ const tab = ref('facilities')
 
 // Quick stats
 const quickStats = ref([
-  { title: 'Total Facilities', value: '4', icon: 'mdi-office-building', color: 'indigo' },
+  { title: 'Total Facilities', value: '4', icon: 'mdi-office-building', color: 'indigo'},
   { title: 'Available Now', value: '2', icon: 'mdi-check-circle', color: 'green' },
   { title: 'My Bookings', value: '3', icon: 'mdi-bookmark', color: 'orange' },
   { title: 'Pending', value: '1', icon: 'mdi-clock', color: 'blue' }
@@ -23,7 +23,7 @@ const facilities = ref([
     capacity: '200 persons',
     location: 'CCIS Ground Floor',
     available: true,
-    image: 'public/img/audi1.jpg',
+    image: '/img/audi1.jpg',
     type: 'auditorium'
   },
   {
@@ -32,7 +32,7 @@ const facilities = ref([
     capacity: '40 computers',
     location: 'CCIS 2nd Floor',
     available: false,
-    image: 'public/img/comlab1.png',
+    image: '/img/comlab1.png',
     type: 'computer_lab'
   },
   {
@@ -41,7 +41,7 @@ const facilities = ref([
     capacity: '50 persons',
     location: 'CCIS 3rd Floor',
     available: true,
-    image: 'public/img/lecture room.jpg',
+    image: '/img/lecture room.jpg',
     type: 'lecture_room'
   },
   {
@@ -50,7 +50,7 @@ const facilities = ref([
     capacity: '20 persons',
     location: 'CCIS 4th Floor',
     available: true,
-    image: 'public/img/conference room.jpg',
+    image: '/img/conference room.jpg',
     type: 'conference_room'
   }
 ])
