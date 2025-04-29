@@ -2,7 +2,7 @@
 import { requiredValidator, emailValidator } from '@/utils/validators';
 import { ref } from 'vue'
 
-const visible = ref(false)
+const passwordVisible = ref(false)
 
 const refVform = ref()
 const formDataDefault = {
@@ -37,13 +37,13 @@ const onFormSubmit = () => {
 
     <v-text-field 
         v-model="formData.password"
-        :append-inner-icon="visible ? 'mdi-eye-off' : 'mdi-eye'"
-        :type="visible ? 'text' : 'password'"
+        :append-inner-icon="passwordVisible ? 'mdi-eye-off' : 'mdi-eye'"
+        :type="passwordVisible ? 'text' : 'password'"
         density="compact"
         placeholder="Enter your password"
         prepend-inner-icon="mdi-lock-outline"
         variant="outlined"
-        @click:append-inner="visible = !visible"
+        @click:append-inner="passwordVisible = !passwordVisible"
         :rules="[requiredValidator]">
       </v-text-field>
 

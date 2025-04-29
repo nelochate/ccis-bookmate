@@ -10,8 +10,10 @@ import { supabase, formActionDefault } from '@/utils/supabase.js'
 import AlertNotification from '@/components/common/AlertNotification.vue'
 import { useRouter } from 'vue-router'
 
+//Load pre-defined funstions
 const router = useRouter()
 
+//Load Variables
 const formDataDefault = {
   firstName: '',
   lastName: '',
@@ -42,6 +44,7 @@ const onSubmit = async () => {
       data: {
         firstName: formData.value.firstName,
         lastName: formData.value.lastName,
+        is_admin: false
       },
     },
   })
@@ -70,11 +73,8 @@ const onFormSubmit = () => {
   
 }
 
-const visible = ref(false)
-const visible2 = ref(false)
-
-
-
+const passwordVisible = ref(false)
+const passwordVisible2 = ref(false)
 </script>
 
 <template>
@@ -111,12 +111,12 @@ const visible2 = ref(false)
 
     <v-text-field
       v-model="formData.password"
-      :append-inner-icon="visible ? 'mdi-eye-off' : 'mdi-eye'"
-      :type="visible ? 'text' : 'password'"
+      :append-inner-icon="passwordVisible ? 'mdi-eye-off' : 'mdi-eye'"
+      :type="passwordVisible ? 'text' : 'password'"
       density="compact"
       prepend-inner-icon="mdi-lock-outline"
       variant="outlined"
-      @click:append-inner="visible = !visible"
+      @click:append-inner="passwordVisible = !passwordVisible"
       label="Password"
       :rules="[requiredValidator, passwordValidator]"
     >
@@ -124,12 +124,12 @@ const visible2 = ref(false)
 
     <v-text-field
       v-model="formData.confirmPassword"
-      :append-inner-icon="visible2 ? 'mdi-eye-off' : 'mdi-eye'"
-      :type="visible2 ? 'text' : 'password'"
+      :append-inner-icon="passwordVisible2 ? 'mdi-eye-off' : 'mdi-eye'"
+      :type="passwordVisible2 ? 'text' : 'password'"
       density="compact"
       prepend-inner-icon="mdi-lock-check"
       variant="outlined"
-      @click:append-inner="visible2 = !visible2"
+      @click:append-inner="passwordVisible2= !passwordVisible2"
       label="Confirm Password"
       :rules="[requiredValidator, confirmedValidator(formData.confirmPassword, formData.password)]"
     >
