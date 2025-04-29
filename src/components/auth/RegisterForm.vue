@@ -8,6 +8,9 @@ import {
 import { ref } from 'vue'
 import { supabase, formActionDefault } from '@/utils/supabase.js'
 import AlertNotification from '@/components/common/AlertNotification.vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 const formDataDefault = {
   firstName: '',
@@ -27,6 +30,7 @@ const formAction = ref({
 
 const refVform = ref()
 
+//Register Functionality
 const onSubmit = async () => {
   formAction.value = { ...formActionDefault }
   formAction.value.formProcess = true
@@ -49,9 +53,11 @@ const onSubmit = async () => {
   } else if (data) {
     console.log(data)
     formAction.value.formSuccessMessage = 'Registration successful'
-    refVform.value?.reset()
+    router.replace('/dashboard')
   }
-
+  //Reset Form
+  refVform.value?.reset()
+  //Turn off processing
   formAction.value.formProcess = false
 }
 
