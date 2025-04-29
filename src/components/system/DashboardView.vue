@@ -32,7 +32,7 @@ const facilities = ref([
     capacity: '40 computers',
     location: 'CCIS 2nd Floor',
     available: false,
-    image: '/img/computer-lab.jpg',
+    image: 'public/img/comlab1.png',
     type: 'computer_lab'
   },
   {
