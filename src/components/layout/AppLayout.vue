@@ -1,12 +1,28 @@
 <script setup>
-import { ref } from 'vue'
+
+import { isAuthenticated } from '@/utils/supabase'
+import BottomNavigation from '@/components/layout/navigation/BottomNavigation.vue'
+import TopProfileNavigation from './navigation/TopProfileNavigation.vue'
+
+import { onMounted, ref } from 'vue'
+import { useDisplay } from 'vuetify'
 
 const theme = ref(localStorage.getItem('theme') ?? 'light')
+
+//Load Variables
+const isLoggedIn = ref(false)
+
+//Get Authentication status from supabase
+const getLoggedStatus = async () => {
+  isLoggedIn.value = await isAuthenticated()
+}
 
 function onClick() {
   theme.value = theme.value === 'light' ? 'dark' : 'light'
   localStorage.setItem('theme', theme.value)
 }
+
+
 </script>
 
 <template>
@@ -21,6 +37,8 @@ function onClick() {
           slim
           @click="onClick"
         ></v-btn>
+
+        <TopProfileNavigation v-if="isLoggedIn"></TopProfileNavigation>
       </v-app-bar>
 
       <v-main>
