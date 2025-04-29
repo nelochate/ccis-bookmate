@@ -23,7 +23,7 @@ const facilities = ref([
     capacity: '200 persons',
     location: 'CCIS Ground Floor',
     available: true,
-    image: '/img/auditorium.jpg',
+    image: 'public/img/audi1.jpg',
     type: 'auditorium'
   },
   {
