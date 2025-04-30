@@ -1,7 +1,6 @@
 <script setup>
 import { supabase, formActionDefault } from '@/utils/supabase'
 
-
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'
 
