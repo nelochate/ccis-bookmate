@@ -10,6 +10,8 @@ import { supabase, formActionDefault } from '@/utils/supabase.js'
 import AlertNotification from '@/components/common/AlertNotification.vue'
 import { useRouter } from 'vue-router'
 
+
+
 //Load pre-defined funstions
 const router = useRouter()
 
@@ -34,7 +36,9 @@ const refVform = ref()
 
 //Register Functionality
 const onSubmit = async () => {
+  //Reset Form Action utils; Turn on processing at the same time
   formAction.value = { ...formActionDefault }
+  //Turn on processing
   formAction.value.formProcess = true
 
   const { data, error } = await supabase.auth.signUp({

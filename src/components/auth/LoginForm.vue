@@ -1,10 +1,16 @@
 <script setup>
+import { formActionDefault, supabase } from '@/utils/supabase'
 import { requiredValidator, emailValidator } from '@/utils/validators';
+import { useRouter } from 'vue-router'
 import { ref } from 'vue'
 
 const passwordVisible = ref(false)
-
 const refVform = ref()
+
+// Utilize pre-defined vue functions
+const router = useRouter()
+
+// Load Variables
 const formDataDefault = {
   email: '',
   password: ''
@@ -14,13 +20,41 @@ const formData = ref({
   ...formDataDefault
 })
 
-const onSubmit = () => {
-  //alert(formData.value.email)
-}
+const formAction = ref({
+    ...formActionDefault
+  })
+
+  const onSubmit = async () => {
+    // Reset Form Action utils; Turn on processing at the same time
+    formAction.value = { ...formActionDefault, formProcess: true }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: formData.value.email,
+      password: formData.value.password
+    })
+
+    if (error) {
+      // Add Error Message and Status Code
+      formAction.value.formErrorMessage = error.message
+      formAction.value.formStatus = error.status
+    } else if (data) {
+      // Add Success Message
+      formAction.value.formSuccessMessage = 'Successfully Logged Account.'
+      // Redirect Acct to Dashboard
+      router.replace('/dashboard')
+    }
+
+    // Reset Form
+    refVForm.value?.reset()
+    // Turn off processing+
+    formAction.value.formProcess = false
+  }
+
 const onFormSubmit = () => {
   refVform.value.validate().then(({ valid }) => {
     if (valid) onSubmit()
   })
+  return { formData, formAction, refVForm, onFormSubmit }
 }
 </script>
 
