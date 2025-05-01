@@ -10,6 +10,8 @@ import { supabase, formActionDefault } from '@/utils/supabase.js'
 import AlertNotification from '@/components/common/AlertNotification.vue'
 import { useRouter } from 'vue-router'
 
+
+
 //Load pre-defined funstions
 const router = useRouter()
 

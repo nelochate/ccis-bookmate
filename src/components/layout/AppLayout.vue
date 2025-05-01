@@ -1,54 +1,33 @@
 <script setup>
-import { isAuthenticated } from '@/utils/supabase'
 import TopProfileNavigation from './navigation/TopProfileNavigation.vue'
+import { useAuthUserStore } from '@/stores/authUser'
 import { onMounted, ref } from 'vue'
 import { useDisplay } from 'vuetify'
-import { supabase } from '@/utils/supabase' // Make sure to import supabase
 
+
+// Utilize pre-defined vue functions
+const { xs, sm, mobile } = useDisplay()
+
+// Use Pinia Store  
+const authStore = useAuthUserStore()
+
+// Load Variables
+const isLoggedIn = ref(false)
+const isMobileLogged = ref(false)
+const isDesktop = ref(false)
 const theme = ref(localStorage.getItem('theme') ?? 'light')
 
-// User state
-const isLoggedIn = ref(false)
-const user = ref(null)
-
-// Get authentication status and user info
-const getLoggedStatus = async () => {
-  isLoggedIn.value = await isAuthenticated()
-  if (isLoggedIn.value) {
-    await fetchUser()
-  }
-}
-
-// Fetch user data
-async function fetchUser() {
-  const {
-    data: { user: userData },
-  } = await supabase.auth.getUser()
-  user.value = userData
-}
-
-// Handle logout
-async function handleLogout() {
-  try {
-    const { error } = await supabase.auth.signOut()
-    if (error) throw error
-    isLoggedIn.value = false
-    user.value = null
-    // You might want to redirect to login page here
-    // router.push({ name: 'login' })
-  } catch (error) {
-    console.error('Error logging out:', error.message)
-  }
-}
-
+//  Toggle Theme
 function onClick() {
   theme.value = theme.value === 'light' ? 'dark' : 'light'
   localStorage.setItem('theme', theme.value)
 }
 
-// Initialize on mount
-onMounted(() => {
-  getLoggedStatus()
+// Load Functions during component rendering
+onMounted(async () => {
+  isLoggedIn.value = await authStore.isAuthenticated()
+  isMobileLogged.value = mobile.value && isLoggedIn.value
+  isDesktop.value = !mobile.value && (isLoggedIn.value || !isLoggedIn.value)
 })
 </script>
 
@@ -62,33 +41,16 @@ onMounted(() => {
         <v-spacer></v-spacer>
 
         <v-btn
-          :icon="theme === 'light' ? 'mdi-white-balance-sunny' : 'mdi-moon-waning-crescent'"
+          :icon="theme === 'light' ? 'mdi-white-balance-sunny' : 'mdi-weather-night'"
           variant="text"
           slim
           @click="onClick"
         ></v-btn>
 
-        <!-- User menu (replaces TopProfileNavigation) -->
-        <v-menu v-if="isLoggedIn && user">
-          <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" icon class="ml-2">
-              <v-avatar size="36">
-                <v-icon>mdi-account</v-icon>
-              </v-avatar>
-            </v-btn>
-          </template>
-
-          <v-list>
-            <v-list-item>
-              <v-list-item-title>{{ user.email }}</v-list-item-title>
-            </v-list-item>
-            <v-divider></v-divider>
-            <v-list-item @click="handleLogout">
-              <v-list-item-title>Logout</v-list-item-title>
-            </v-list-item>
-          </v-list>
-        </v-menu>
+        <!-- User menu -->
+        <TopProfileNavigation v-if="isLoggedIn"></TopProfileNavigation>
       </v-app-bar>
+  
 
       <v-main>
         <v-container>
