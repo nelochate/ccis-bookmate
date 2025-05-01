@@ -24,6 +24,20 @@ router.beforeEach(async (to) => {
     // redirect the user to the dashboard page
     return { name: 'dashboard' }
   }
+
+  // If not logged in, prevent access to system pages
+  if (!isLoggedIn && to.meta.requiresAuth) {
+    // redirect the user to the login page
+    return { name: 'login' }
+  }
+
+  // Check if the user is logged in
+  if (isLoggedIn) {
+    // Load user data if not already done
+    if (!authStore.userData) await authStore.getUserInformation()
+    
+  }
+  
 })
 
 export default router
