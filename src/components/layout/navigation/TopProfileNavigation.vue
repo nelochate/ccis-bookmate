@@ -38,8 +38,8 @@ const onLogout = async () => {
   <v-menu min-width="200px" rounded>
     <template #activator="{ props }">
       <v-btn icon v-bind="props">
-        <v-avatar color="orange-darken-3" size="large">
-          <span class="text-h5">
+        <v-avatar color="blue-darken-3" size="large">
+          <span class="text-h6">
             {{ getAvatarText(authStore.userData.firstName + ' ' + authStore.userData.lastName) }}
           </span>
         </v-avatar>
@@ -54,8 +54,8 @@ const onLogout = async () => {
             :title="authStore.userData.firstName + ' ' + authStore.userData.lastName"
           >
             <template #prepend>
-              <v-avatar color="orange-darken-3" size="large">
-                <span class="text-h5">
+              <v-avatar color="blue-darken-3" size="large">
+                <span class="text-h6">
                   {{
                     getAvatarText(authStore.userData.firstName + ' ' + authStore.userData.lastName)
                   }}

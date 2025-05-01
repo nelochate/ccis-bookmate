@@ -241,7 +241,7 @@ async function checkBookingConflict() {
     <template #content>
       <v-container fluid>
         <!-- Header Section -->
-        <v-row class="mb-6">
+        <v-row class="mb-6 d-flex justify-center align-center">
           <v-col cols="12">
             <v-card
               class="pa-4"
