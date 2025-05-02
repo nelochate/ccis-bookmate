@@ -9,9 +9,9 @@ const tab = ref('facilities')
 
 // Quick stats
 const quickStats = ref([
-  { title: 'Total Facilities', value: '4', icon: 'mdi-office-building', color: 'indigo'},
+  { title: 'Total Facilities', value: '4', icon: 'mdi-office-building', color: 'indigo', },
   { title: 'Available Now', value: '2', icon: 'mdi-check-circle', color: 'green' },
-  { title: 'My Bookings', value: '3', icon: 'mdi-bookmark', color: 'orange' },
+  { title: 'My Bookings', value: '3', icon: 'mdi-bookmark', color: 'yellow' },
   { title: 'Pending', value: '1', icon: 'mdi-clock', color: 'blue' }
 ])
 
@@ -261,20 +261,25 @@ onMounted(() => {
           </v-col>
         </v-row>
 
-        <!-- Quick Stats -->
         <v-row class="mb-6">
-          <v-col v-for="stat in quickStats" :key="stat.title" cols="12" sm="6" md="3">
-            <v-card>
-              <v-card-text class="d-flex justify-space-between align-center">
-                <div>
-                  <div class="text-subtitle-1">{{ stat.title }}</div>
-                  <div class="text-h5 font-weight-bold">{{ stat.value }}</div>
-                </div>
-                <v-icon :color="stat.color" size="40">{{ stat.icon }}</v-icon>
-              </v-card-text>
-            </v-card>
-          </v-col>
-        </v-row>
+  <v-col v-for="stat in quickStats" :key="stat.title" cols="12" sm="6" md="3">
+    <v-hover v-slot="{ isHovering, props }">
+      <v-card
+        v-bind="props"
+        :elevation="isHovering ? 8 : 2"
+        class="transition-swing"
+      >
+        <v-card-text class="d-flex justify-space-between align-center">
+          <div>
+            <div class="text-subtitle-1">{{ stat.title }}</div>
+            <div class="text-h5 font-weight-bold">{{ stat.value }}</div>
+          </div>
+          <v-icon :color="stat.color" size="48">{{ stat.icon }}</v-icon>
+        </v-card-text>
+      </v-card>
+    </v-hover>
+  </v-col>
+</v-row>
 
         <!-- Tabs for Different Views -->
         <v-tabs v-model="tab" grow>
