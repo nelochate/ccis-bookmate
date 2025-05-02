@@ -208,7 +208,6 @@ const loadingFacilities = ref(false)
 const loadingBookings = ref(false)
 const error = ref(null)
 
-
 // Booking Conflict Detection
 async function checkBookingConflict() {
   try {
@@ -217,17 +216,18 @@ async function checkBookingConflict() {
       .select('*')
       .eq('facility_id', bookingForm.value.facility)
       .eq('booking_date', bookingForm.value.date)
-      .or(`and(start_time.lte.${bookingForm.value.endTime},end_time.gte.${bookingForm.value.startTime})`)
-    
+      .or(
+        `and(start_time.lte.${bookingForm.value.endTime},end_time.gte.${bookingForm.value.startTime})`,
+      )
+
     if (error) throw error
-    
+
     return data.length > 0
   } catch (error) {
     console.error('Error checking booking conflicts:', error.message)
     return false
   }
 }
-
 </script>
 
 <style scoped>

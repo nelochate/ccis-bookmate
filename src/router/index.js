@@ -1,11 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthUserStore } from '@/stores/authUser'
-import {routes} from './routes'
-
+import { routes } from './routes'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes
+  routes,
 })
 
 router.beforeEach(async (to) => {
@@ -30,14 +29,20 @@ router.beforeEach(async (to) => {
     // redirect the user to the login page
     return { name: 'login' }
   }
-
+/*
   // Check if the user is logged in
   if (isLoggedIn) {
-    // Load user data if not already done
-    if (!authStore.userData) await authStore.getUserInformation()
-    
-  }
-  
+    //Retrieve user information
+    const userMetadata = await getUserInformation()
+    //Get user role
+    const isAdmin = userMetadata.is_admin
+
+    //Restrict access to admin pages
+    if(!isAdmin && to.meta.requiresAdmin) {
+      return { name: 'forbidden' }
+    }
+  }*/
+ 
 })
 
 export default router

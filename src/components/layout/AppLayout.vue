@@ -41,6 +41,7 @@ onMounted(async () => {
         <v-spacer></v-spacer>
 
         <v-btn
+          class="mx-2"
           :icon="theme === 'light' ? 'mdi-white-balance-sunny' : 'mdi-weather-night'"
           variant="text"
           slim
