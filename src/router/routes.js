@@ -6,9 +6,9 @@ import RegisterView from '@/views/auth/RegisterView.vue'
 import ForbiddenView from '@/views/errors/ForbiddenView.vue'
 import NotFoundView from '@/views/errors/NotFoundView.vue'
 
-// Default
-import DashboardView from '@/components/system/DashboardView.vue'
-
+// System
+import DashboardView from '@/views/system/DashboardView.vue'
+import AdminView from '@/views/system/AdminView.vue'
 // Toggle for system deface mode
 const isDefaced = false
 
@@ -63,12 +63,18 @@ export const routes = isDefaced
         meta: { requiresAuth: false }
       },
 
-      // Default Pages
+      // System Pages/User Management Page
       {
         path: '/dashboard',
         name: 'dashboard',
         component: DashboardView,
         meta: { requiresAuth: true, isDefault: true }
+      },
+      {
+        path: '/admin',
+        name: 'admin',
+        component: AdminView,
+        meta: { requiresAuth: true, requiresAdmin: true }
       },
 
       // Errors Pages
