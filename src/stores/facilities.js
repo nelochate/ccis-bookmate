@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-export const useCounterStore = defineStore('facilities', () => {
+export const useFacilitiesStore = defineStore('facilities', () => {
   //States
   const facilities = ref([])
 
