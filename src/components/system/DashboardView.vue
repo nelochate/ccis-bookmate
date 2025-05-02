@@ -22,7 +22,7 @@ const facilities = ref([
     name: 'Auditorium',
     capacity: '200 persons',
     location: 'CCIS Ground Floor',
-    available: true,
+    is_available: true,
     image: '/img/audi1.jpg',
     type: 'auditorium'
   },
@@ -31,7 +31,7 @@ const facilities = ref([
     name: 'Computer Lab 1',
     capacity: '40 computers',
     location: 'CCIS 2nd Floor',
-    available: false,
+    is_available: false,
     image: '/img/comlab1.png',
     type: 'computer_lab'
   },
@@ -40,7 +40,7 @@ const facilities = ref([
     name: 'Lecture Room A',
     capacity: '50 persons',
     location: 'CCIS 3rd Floor',
-    available: true,
+    is_available: true,
     image: '/img/lecture room.jpg',
     type: 'lecture_room'
   },
@@ -49,7 +49,7 @@ const facilities = ref([
     name: 'Conference Room',
     capacity: '20 persons',
     location: 'CCIS 4th Floor',
-    available: true,
+    is_available: true,
     image: '/img/conference room.jpg',
     type: 'conference_room'
   }
@@ -307,8 +307,8 @@ onMounted(() => {
                   <v-card-text>
                     <div class="d-flex justify-space-between">
                       <span>Capacity: {{ facility.capacity }}</span>
-                      <v-chip :color="facility.available ? 'success' : 'error'" small>
-                        {{ facility.available ? 'Available' : 'Booked' }}
+                      <v-chip :color="facility.is_available ? 'success' : 'error'" small>
+                        {{ facility.is_available ? 'Available' : 'Booked' }}
                       </v-chip>
                     </div>
                     <div class="mt-2">
