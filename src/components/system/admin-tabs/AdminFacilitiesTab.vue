@@ -10,7 +10,7 @@ const props = defineProps({
   error: String
 });
 
-const emit = defineEmits(['refresh', 'edit-facility', 'delete-facility']);
+const emit = defineEmits(['refresh', 'edit-facility', 'delete-facility', 'save-facility']);
 
 const headers = [
   { title: 'Name', key: 'name' },
@@ -27,6 +27,40 @@ const statusColors = {
 };
 
 const getStatusText = (available) => available ? 'Available' : 'Occupied';
+
+// Facility Dialog
+const facilityDialog = ref(false);
+const facilityForm = ref({
+  id: null,
+  name: '',
+  type: 'computer_lab',
+  capacity: '',
+  location: '',
+  available: true,
+  image: ''
+});
+
+const openFacilityDialog = (facility = null) => {
+  if (facility) {
+    facilityForm.value = { ...facility };
+  } else {
+    facilityForm.value = {
+      id: null,
+      name: '',
+      type: 'computer_lab',
+      capacity: '',
+      location: '',
+      available: true,
+      image: ''
+    };
+  }
+  facilityDialog.value = true;
+};
+
+const saveFacility = () => {
+  emit('save-facility', facilityForm.value);
+  facilityDialog.value = false;
+};
 </script>
 
 <template>
@@ -53,7 +87,7 @@ const getStatusText = (available) => available ? 'Available' : 'Occupied';
       <v-btn
         color="primary"
         prepend-icon="mdi-plus"
-        @click="$emit('edit-facility', null)"
+        @click="openFacilityDialog()"
       >
         Add Facility
       </v-btn>
@@ -91,7 +125,7 @@ const getStatusText = (available) => available ? 'Available' : 'Occupied';
           size="small"
           color="primary"
           class="mr-2"
-          @click.stop="$emit('edit-facility', item)"
+          @click.stop="openFacilityDialog(item)"
         >
           <v-icon>mdi-pencil</v-icon>
         </v-btn>
@@ -105,6 +139,57 @@ const getStatusText = (available) => available ? 'Available' : 'Occupied';
         </v-btn>
       </template>
     </v-data-table>
+
+    <!-- Facility Management Dialog -->
+    <v-dialog v-model="facilityDialog" max-width="600">
+      <v-card>
+        <v-card-title>
+          {{ facilityForm.id ? 'Edit Facility' : 'Add New Facility' }}
+        </v-card-title>
+        <v-card-text>
+          <v-form @submit.prevent="saveFacility">
+            <v-text-field 
+              v-model="facilityForm.name" 
+              label="Name" 
+              required
+            ></v-text-field>
+            <v-select
+              v-model="facilityForm.type"
+              :items="[
+                { text: 'Computer Lab', value: 'computer_lab' },
+                { text: 'Lecture Room', value: 'lecture_room' },
+              ]"
+              label="Type"
+              required
+            ></v-select>
+            <v-text-field
+              v-model="facilityForm.capacity"
+              label="Capacity"
+              type="number"
+              required
+            ></v-text-field>
+            <v-text-field
+              v-model="facilityForm.location"
+              label="Location"
+              required
+            ></v-text-field>
+            <v-switch 
+              v-model="facilityForm.available" 
+              label="Available"
+            ></v-switch>
+            <v-text-field 
+              v-model="facilityForm.image" 
+              label="Image URL"
+            ></v-text-field>
+          </v-form>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="error" @click="facilityDialog = false">Cancel</v-btn>
+          <v-btn color="primary" @click="saveFacility">Save</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
