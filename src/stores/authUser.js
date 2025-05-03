@@ -5,13 +5,11 @@ import { defineStore } from 'pinia'
 export const useAuthUserStore = defineStore('authUser', () => {
   // States
   const userData = ref(null)
-  const authPages = ref([])
-
+  const isLoading = ref(false)
 
   // Getters
-  // Computed Properties; Use for getting the state but not modifying its reactive state
   const isLoggedIn = computed(() => !!userData.value)
-  const isAdmin = computed(() => userData.value?.user_role === 'admin')
+  const isAdmin = computed(() => userData.value?.is_admin || false)
 
   // Reset State Action
   function $reset() {
@@ -19,50 +17,63 @@ export const useAuthUserStore = defineStore('authUser', () => {
   }
 
   // Actions
-  // Retrieve User Session if Logged
   async function isAuthenticated() {
-    const { data } = await supabase.auth.getSession()
-
-    if (data.session) {
-      const { id, email, user_metadata } = data.session.user
-      userData.value = { id, email, ...user_metadata }
-    }
-
-    return !!data.session
-  }
-
-  // Retrieve User Information
-  async function getUserInformation() {
-    const {
-      data: {
-        // Retrieve Id, Email and Metadata thru Destructuring
-        user: { id, email, user_metadata }
+    try {
+      isLoading.value = true
+      const { data, error } = await supabase.auth.getSession()
+      
+      if (error) throw error
+      if (!data.session) return false
+      
+      // Store basic user data
+      userData.value = {
+        id: data.session.user.id,
+        email: data.session.user.email,
+        ...data.session.user.user_metadata,
+        is_admin: data.session.user.user_metadata?.is_admin || false
       }
-    } = await supabase.auth.getUser()
-
-    // Set the retrieved information to state
-    userData.value = { id, email, ...user_metadata }
+      
+      return true
+    } catch (error) {
+      console.error('Authentication check failed:', error)
+      return false
+    } finally {
+      isLoading.value = false
+    }
   }
 
-  // Retrieve User Roles Pages
-  async function getAuthPages(name) {
-    const { data } = await supabase
-      .from('user_roles')
-      .select('*, pages: user_role_pages (page)')
-      .eq('user_role', name)
-
-    // Set the retrieved data to state
-    if (data.length > 0) authPages.value = data[0].pages.map((p) => p.page)
+  async function getUserInformation() {
+    try {
+      isLoading.value = true
+      const { data: { user }, error } = await supabase.auth.getUser()
+      
+      if (error) throw error
+      if (!user) throw new Error('No authenticated user')
+      
+      // Update user data from auth metadata
+      userData.value = {
+        id: user.id,
+        email: user.email,
+        ...user.user_metadata,
+        is_admin: user.user_metadata?.is_admin || false
+      }
+      
+      return userData.value
+    } catch (error) {
+      console.error('Failed to get user information:', error)
+      throw error
+    } finally {
+      isLoading.value = false
+    }
   }
 
   return {
     userData,
+    isLoading,
     isLoggedIn,
     isAdmin,
     $reset,
     isAuthenticated,
     getUserInformation
   }
-  
 })
-

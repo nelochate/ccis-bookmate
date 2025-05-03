@@ -8,41 +8,38 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
-  // Use Pinia Store
   const authStore = useAuthUserStore()
-  // Load if user is logged in
   const isLoggedIn = await authStore.isAuthenticated()
 
-  // Redirect to appropriate page if accessing home route
+  // Home page redirection
   if (to.name === 'home') {
     return isLoggedIn ? { name: 'dashboard' } : { name: 'login' }
   }
 
-  // If logged in, prevent access to login or register pages
+  // Prevent logged-in users from accessing auth pages
   if (isLoggedIn && (to.name === 'login' || to.name === 'register')) {
-    // redirect the user to the dashboard page
     return { name: 'dashboard' }
   }
 
-  // If not logged in, prevent access to system pages
+  // Protect auth-required routes
   if (!isLoggedIn && to.meta.requiresAuth) {
-    // redirect the user to the login page
     return { name: 'login' }
   }
-/*
-  // Check if the user is logged in
-  if (isLoggedIn) {
-    //Retrieve user information
-    const userMetadata = await getUserInformation()
-    //Get user role
-    const isAdmin = userMetadata.is_admin
 
-    //Restrict access to admin pages
-    if(!isAdmin && to.meta.requiresAdmin) {
-      return { name: 'forbidden' }
+  // Admin route protection
+  if (isLoggedIn && to.meta.requiresAdmin) {
+    try {
+      // Get fresh user data including admin status
+      const user = await authStore.getUserInformation()
+      
+      if (!user?.is_admin) {
+        return { name: 'forbidden' }
+      }
+    } catch (error) {
+      console.error('Admin check failed:', error)
+      return { name: 'dashboard' }
     }
-  }*/
- 
+  }
 })
 
 export default router

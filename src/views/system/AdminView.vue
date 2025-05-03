@@ -48,24 +48,36 @@ async function fetchAllBookings() {
     const { data, error: fetchError } = await supabase
       .from('bookings')
       .select(`id, purpose, booking_date, start_time, end_time, status, notes, 
-               facilities (id, name), profiles (id, full_name, email)`)
+               facilities (id, name), user_id`)
       .order('booking_date', { ascending: true })
 
     if (fetchError) throw fetchError
 
-    allBookings.value = data.map(booking => ({
-      id: booking.id,
-      facilityId: booking.facilities.id,
-      facilityName: booking.facilities.name,
-      userId: booking.profiles.id,
-      userName: booking.profiles.full_name,
-      userEmail: booking.profiles.email,
-      date: booking.booking_date,
-      time: `${booking.start_time} - ${booking.end_time}`,
-      purpose: booking.purpose,
-      status: booking.status,
-      notes: booking.notes,
-    }))
+    // Get user data for all bookings in one query
+    const userIds = data.map(booking => booking.user_id)
+    const { data: userData } = await supabase
+      .from('user_profiles')
+      .select('id, email, raw_user_meta_data')
+      .in('id', userIds)
+
+    allBookings.value = data.map(booking => {
+      const user = userData?.find(u => u.id === booking.user_id) || {}
+      return {
+        id: booking.id,
+        facilityId: booking.facilities?.id,
+        facilityName: booking.facilities?.name,
+        userId: booking.user_id,
+        userName: user.raw_user_meta_data?.name || 
+                 user.raw_user_meta_data?.full_name || 
+                 user.email,
+        userEmail: user.email,
+        date: booking.booking_date,
+        time: `${booking.start_time} - ${booking.end_time}`,
+        purpose: booking.purpose,
+        status: booking.status,
+        notes: booking.notes,
+      }
+    })
 
     updateQuickStats()
   } catch (err) {
@@ -77,14 +89,28 @@ async function fetchAllBookings() {
 
 async function fetchUsers() {
   try {
-    loading.value.users = true
-    const { data, error: fetchError } = await supabase.from('profiles').select('*')
-    if (fetchError) throw fetchError
-    users.value = data
+    loading.value.users = true;
+    
+    // Query the user_profiles view
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('id, email, name, created_at, last_sign_in_at, avatar_url');
+    
+    if (error) throw error;
+    
+    users.value = data.map(user => ({
+      id: user.id,
+      email: user.email,
+      name: user.name || user.email.split('@')[0], // Fallback
+      createdAt: user.created_at,
+      lastSignIn: user.last_sign_in_at,
+      avatar: user.avatar_url  // Optional
+    }));
+    
   } catch (err) {
-    error.value = `Error fetching users: ${err.message}`
+    error.value = `Error fetching users: ${err.message}`;
   } finally {
-    loading.value.users = false
+    loading.value.users = false;
   }
 }
 
@@ -127,16 +153,13 @@ onMounted(async () => {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, fetchAllBookings)
     .subscribe()
 
-  const usersChannel = supabase
-    .channel('admin_users_changes')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, fetchUsers)
-    .subscribe()
+  // Note: Can't subscribe directly to auth.users changes - need to use auth channel
+  // or create a function that calls fetchUsers when auth changes
 
   // Clean up on unmount
   onUnmounted(() => {
     supabase.removeChannel(facilitiesChannel)
     supabase.removeChannel(bookingsChannel)
-    supabase.removeChannel(usersChannel)
   })
 })
 </script>

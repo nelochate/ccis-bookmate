@@ -2,117 +2,127 @@ import { supabase } from '@/utils/supabase'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-export const useProfilesStore = defineStore('profiles', () => {
+export const useAuthUsersStore = defineStore('authUsers', () => {
   // States
-  const profiles = ref([])
-  const currentProfile = ref(null)
+  const users = ref([])
+  const currentUser = ref(null)
 
   // Reset State Action
   function $reset() {
-    profiles.value = []
-    currentProfile.value = null
+    users.value = []
+    currentUser.value = null
   }
 
-  // Retrieve All Profiles
-  async function fetchProfiles() {
+  // Retrieve All Users (requires admin privileges)
+  async function fetchUsers() {
     try {
+      // Note: This requires appropriate permissions in your Supabase setup
       const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
+        .from('users_profiles')
+        .select('id, email, raw_user_meta_data, created_at, last_sign_in_at')
         .order('created_at', { ascending: false })
 
       if (error) throw error
       
-      profiles.value = data
-      return { data, error: null }
+      // Transform data to match your expected structure
+      users.value = data.map(user => ({
+        id: user.id,
+        email: user.email,
+        name: user.raw_user_meta_data?.name || 
+              user.raw_user_meta_data?.full_name || 
+              user.email.split('@')[0], // Fallback to first part of email
+        avatar_url: user.raw_user_meta_data?.avatar_url,
+        created_at: user.created_at,
+        last_sign_in_at: user.last_sign_in_at,
+        // Add any additional fields you need
+        is_admin: user.raw_user_meta_data?.is_admin || false
+      }))
+      
+      return { data: users.value, error: null }
     } catch (error) {
-      console.error('Error fetching profiles:', error)
+      console.error('Error fetching users:', error)
       return { data: null, error }
     }
   }
 
-  // Get Current User's Profile
-  async function fetchCurrentProfile() {
+  // Get Current User's Data
+  async function fetchCurrentUser() {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
       if (!user) return { data: null, error: 'No authenticated user' }
+      if (authError) throw authError
 
+      // Get additional user data from auth.users
       const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
+        .from('user_profiles')
+        .select('id, email, raw_user_meta_data')
         .eq('id', user.id)
         .single()
 
       if (error) throw error
       
-      currentProfile.value = data
-      return { data, error: null }
+      currentUser.value = {
+        id: data.id,
+        email: data.email,
+        name: data.raw_user_meta_data?.name || 
+              data.raw_user_meta_data?.full_name || 
+              data.email.split('@')[0],
+        avatar_url: data.raw_user_meta_data?.avatar_url,
+        is_admin: data.raw_user_meta_data?.is_admin || false
+      }
+      
+      return { data: currentUser.value, error: null }
     } catch (error) {
-      console.error('Error fetching current profile:', error)
+      console.error('Error fetching current user:', error)
       return { data: null, error }
     }
   }
 
-  // Create or Update Profile
-  async function saveProfile(profileData) {
+  // Update User Data
+  async function updateUser(userData) {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('No authenticated user')
 
-      // If profile exists, update it
-      if (profileData.id) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .update({
-            ...profileData,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', profileData.id)
-          .select()
-          .single()
+      // Update auth user metadata
+      const { data, error } = await supabase.auth.updateUser({
+        data: {
+          ...userData,
+          // Preserve existing metadata
+          ...(currentUser.value?.raw_user_meta_data || {})
+        }
+      })
 
-        if (error) throw error
-        return { data, error: null }
-      }
-      // Otherwise create new profile
-      else {
-        const { data, error } = await supabase
-          .from('profiles')
-          .insert([{
-            id: user.id,
-            ...profileData
-          }])
-          .select()
-          .single()
-
-        if (error) throw error
-        return { data, error: null }
-      }
+      if (error) throw error
+      
+      // Refresh local state
+      await fetchCurrentUser()
+      return { data, error: null }
     } catch (error) {
-      console.error('Error saving profile:', error)
+      console.error('Error updating user:', error)
       return { data: null, error }
     }
   }
 
-  // Set Admin Status
+  // Set Admin Status (requires special permissions)
   async function setAdminStatus(userId, isAdmin) {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .update({ 
-          is_admin: isAdmin,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', userId)
-        .select()
-        .single()
+      // This requires a custom function or direct database access
+      // as Supabase doesn't allow directly updating auth.users
+      const { data, error } = await supabase.rpc('set_admin_status', {
+        user_id: userId,
+        is_admin: isAdmin
+      })
 
       if (error) throw error
       
       // Update local state if needed
-      if (currentProfile.value?.id === userId) {
-        currentProfile.value.is_admin = isAdmin
+      if (currentUser.value?.id === userId) {
+        currentUser.value.is_admin = isAdmin
       }
+      
+      // Refresh users list
+      await fetchUsers()
       
       return { data, error: null }
     } catch (error) {
@@ -122,12 +132,12 @@ export const useProfilesStore = defineStore('profiles', () => {
   }
 
   return {
-    profiles,
-    currentProfile,
+    users,
+    currentUser,
     $reset,
-    fetchProfiles,
-    fetchCurrentProfile,
-    saveProfile,
+    fetchUsers,
+    fetchCurrentUser,
+    updateUser,
     setAdminStatus
   }
 })

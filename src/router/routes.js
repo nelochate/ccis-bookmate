@@ -9,6 +9,8 @@ import NotFoundView from '@/views/errors/NotFoundView.vue'
 // System
 import DashboardView from '@/views/system/DashboardView.vue'
 import AdminView from '@/views/system/AdminView.vue'
+
+import { useAuthUserStore } from '@/stores/authUser'
 // Toggle for system deface mode
 const isDefaced = false
 
