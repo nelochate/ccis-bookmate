@@ -27,6 +27,7 @@ const getStatusColor = (status) => {
     case 'approved': return 'success';
     case 'pending': return 'warning';
     case 'rejected': return 'error';
+    case 'cancelled': return 'grey';
     default: return 'info';
   }
 };
@@ -42,6 +43,16 @@ const updateBookingStatus = (status) => {
     status
   });
   approvalDialog.value = false;
+};
+
+// Format date for display
+const formatDate = (dateString) => {
+  return new Date(dateString).toLocaleDateString();
+};
+
+// Format time for display
+const formatTimeRange = (start, end) => {
+  return `${start} - ${end}`;
 };
 </script>
 
@@ -72,29 +83,53 @@ const updateBookingStatus = (status) => {
       class="elevation-1"
     >
       <template #item.user="{ item }">
-        {{ item.profiles.name }} ({{ item.profiles.email }})
+        <div v-if="item.userName">
+          {{ item.userName }} ({{ item.userEmail }})
+        </div>
+        <div v-else>
+          User data not available
+        </div>
       </template>
       
       <template #item.facility="{ item }">
-        {{ item.facilities.name }}
+        {{ item.facilityName || 'Unknown facility' }}
+      </template>
+      
+      <template #item.date="{ item }">
+        {{ formatDate(item.date) }}
+      </template>
+      
+      <template #item.time="{ item }">
+        {{ item.time }}
       </template>
       
       <template #item.status="{ item }">
-        <v-chip :color="getStatusColor(item.status)">
+        <v-chip :color="getStatusColor(item.status)" small>
           {{ item.status }}
         </v-chip>
       </template>
       
       <template #item.actions="{ item }">
-        <v-btn
-          v-if="item.status === 'pending'"
-          icon
-          size="small"
-          color="primary"
-          @click.stop="openApprovalDialog(item)"
-        >
-          <v-icon>mdi-check</v-icon>
-        </v-btn>
+        <div class="d-flex">
+          <v-btn
+            v-if="item.status === 'pending'"
+            icon
+            size="small"
+            color="primary"
+            class="mr-2"
+            @click.stop="openApprovalDialog(item)"
+          >
+            <v-icon>mdi-check</v-icon>
+          </v-btn>
+          <v-btn
+            icon
+            size="small"
+            color="error"
+            @click.stop="emit('update-booking-status', { id: item.id, status: 'cancelled' })"
+          >
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </div>
       </template>
     </v-data-table>
 
@@ -103,15 +138,15 @@ const updateBookingStatus = (status) => {
       <v-card>
         <v-card-title>Booking Approval</v-card-title>
         <v-card-text>
-          <p><strong>Facility:</strong> {{ selectedBooking?.facilities?.name }}</p>
+          <p><strong>Facility:</strong> {{ selectedBooking?.facilityName || 'Unknown' }}</p>
           <p>
-            <strong>User:</strong> {{ selectedBooking?.profiles?.name }} ({{
-              selectedBooking?.profiles?.email
-            }})
+            <strong>User:</strong> 
+            {{ selectedBooking?.userName || 'No name' }} 
+            ({{ selectedBooking?.userEmail || 'No email' }})
           </p>
-          <p><strong>Date:</strong> {{ selectedBooking?.booking_date }}</p>
-          <p><strong>Time:</strong> {{ selectedBooking?.start_time }} - {{ selectedBooking?.end_time }}</p>
-          <p><strong>Purpose:</strong> {{ selectedBooking?.purpose }}</p>
+          <p><strong>Date:</strong> {{ formatDate(selectedBooking?.date) }}</p>
+          <p><strong>Time:</strong> {{ selectedBooking?.time }}</p>
+          <p><strong>Purpose:</strong> {{ selectedBooking?.purpose || 'Not specified' }}</p>
           <p><strong>Notes:</strong> {{ selectedBooking?.notes || 'None' }}</p>
         </v-card-text>
         <v-card-actions>
@@ -129,5 +164,10 @@ const updateBookingStatus = (status) => {
   padding: 16px;
   background-color: var(--v-background-base);
   border-radius: 5px;
+}
+
+/* Add some spacing between action buttons */
+.v-btn + .v-btn {
+  margin-left: 8px;
 }
 </style>
