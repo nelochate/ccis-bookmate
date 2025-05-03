@@ -1,14 +1,58 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
-import { supabase } from '@/utils/supabase' // Import your Supabase client
+import { supabase } from '@/utils/supabase'
 
-import FacilitiesTab from '@/components/system/FacilitiesTab.vue';
-import BookingsTab from '@/components/system/BookingsTab.vue';
-import SchedulesTab from '@/components/system/SchedulesTab.vue';
+import FacilitiesTab from '@/components/system/FacilitiesTab.vue'
+import BookingsTab from '@/components/system/BookingsTab.vue'
+import SchedulesTab from '@/components/system/SchedulesTab.vue'
+
+import BookingsFormDialog from '@/components/system/BookingsFormDialog.vue'
 
 const theme = ref(localStorage.getItem('theme') ?? 'light')
 const tab = ref('facilities')
+
+// Add these new refs for dialog control
+const showBookingDialog = ref(false)
+const selectedFacility = ref(null)
+
+// Add this function to handle opening the dialog
+function openBookingDialog(facility) {
+  selectedFacility.value = facility
+  showBookingDialog.value = true
+}
+
+// Add this function to handle booking submission
+async function handleSubmitBooking(bookingData) {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
+    const { error } = await supabase.from('bookings').insert({
+      facility_id: bookingData.facility,
+      user_id: user.id,
+      purpose: bookingData.purpose,
+      booking_date: bookingData.date,
+      start_time: bookingData.startTime,
+      end_time: bookingData.endTime,
+      notes: bookingData.notes,
+      status: 'pending',
+    })
+
+    if (error) throw error
+
+    // Refresh data
+    await fetchUserBookings()
+    await fetchFacilities()
+    
+    showBookingDialog.value = false
+  } catch (error) {
+    console.error('Error submitting booking:', error.message)
+  }
+}
+
 
 // Data refs
 const quickStats = ref([
@@ -23,24 +67,19 @@ const userBookings = ref([])
 const computerLabs = ref([])
 const lectureRooms = ref([])
 
-// Booking dialog
-const bookingDialog = ref(false)
-const selectedFacility = ref(null)
-const bookingForm = ref({
-  facility: null,
-  purpose: '',
-  date: null,
-  startTime: null,
-  endTime: null,
-  notes: '',
-})
+// Add these refs
+const loadingFacilities = ref(false)
+const loadingBookings = ref(false)
+const error = ref(null)
+const user = ref(null)
 
 // Fetch data from Supabase
 async function fetchFacilities() {
   try {
-    const { data, error } = await supabase.from('facilities').select('*')
+    loadingFacilities.value = true
+    const { data, error: fetchError } = await supabase.from('facilities').select('*')
 
-    if (error) throw error
+    if (fetchError) throw fetchError
 
     facilities.value = data
     updateQuickStats()
@@ -48,19 +87,26 @@ async function fetchFacilities() {
     // Populate computer labs and lecture rooms for schedules
     computerLabs.value = data.filter((f) => f.type === 'computer_lab')
     lectureRooms.value = data.filter((f) => f.type === 'lecture_room')
-  } catch (error) {
-    console.error('Error fetching facilities:', error.message)
+  } catch (err) {
+    error.value = err.message
+    console.error('Error fetching facilities:', err.message)
+  } finally {
+    loadingFacilities.value = false
   }
 }
 
 async function fetchUserBookings() {
   try {
+    loadingBookings.value = true
     const {
-      data: { user },
+      data: { user: authUser },
+      error: authError,
     } = await supabase.auth.getUser()
-    if (!user) return
 
-    const { data, error } = await supabase
+    if (authError) throw authError
+    if (!authUser) return
+
+    const { data, error: bookingsError } = await supabase
       .from('bookings')
       .select(
         `
@@ -74,10 +120,10 @@ async function fetchUserBookings() {
         facilities (id, name)
       `,
       )
-      .eq('user_id', user.id)
+      .eq('user_id', authUser.id)
       .order('booking_date', { ascending: true })
 
-    if (error) throw error
+    if (bookingsError) throw bookingsError
 
     userBookings.value = data.map((booking) => ({
       id: booking.id,
@@ -91,8 +137,11 @@ async function fetchUserBookings() {
     }))
 
     updateQuickStats()
-  } catch (error) {
-    console.error('Error fetching user bookings:', error.message)
+  } catch (err) {
+    error.value = err.message
+    console.error('Error fetching user bookings:', err.message)
+  } finally {
+    loadingBookings.value = false
   }
 }
 
@@ -105,77 +154,62 @@ function updateQuickStats() {
     .length.toString()
 }
 
-async function submitBooking() {
+async function cancelBooking(booking) {
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) throw new Error('User not authenticated')
+    const { error: deleteError } = await supabase.from('bookings').delete().eq('id', booking.id)
 
-    const { error } = await supabase.from('bookings').insert({
-      facility_id: bookingForm.value.facility,
-      user_id: user.id,
-      purpose: bookingForm.value.purpose,
-      booking_date: bookingForm.value.date,
-      start_time: bookingForm.value.startTime,
-      end_time: bookingForm.value.endTime,
-      notes: bookingForm.value.notes,
-      status: 'pending',
-    })
-
-    if (error) throw error
+    if (deleteError) throw deleteError
 
     // Refresh data
     await fetchUserBookings()
     await fetchFacilities()
-
-    bookingDialog.value = false
-    resetBookingForm()
-  } catch (error) {
-    console.error('Error submitting booking:', error.message)
+  } catch (err) {
+    error.value = err.message
+    console.error('Error canceling booking:', err.message)
   }
 }
 
-async function cancelBooking(booking) {
+async function fetchUser() {
   try {
-    const { error } = await supabase.from('bookings').delete().eq('id', booking.id)
+    const {
+      data: { user: userData },
+      error: userError,
+    } = await supabase.auth.getUser()
 
-    if (error) throw error
+    if (userError) throw userError
+    user.value = userData
+  } catch (err) {
+    error.value = err.message
+    console.error('Error fetching user:', err.message)
+  }
+}
 
-    // Refresh data
-    await fetchUserBookings()
-    await fetchFacilities()
-  } catch (error) {
-    console.error('Error canceling booking:', error.message)
+async function handleLogout() {
+  try {
+    const { error: logoutError } = await supabase.auth.signOut()
+    if (logoutError) throw logoutError
+    router.push({ name: 'login' })
+  } catch (err) {
+    error.value = err.message
+    console.error('Error logging out:', err.message)
   }
 }
 
 // Initialize
 onMounted(async () => {
-  bookingForm.value.date = new Date().toISOString().substr(0, 10)
-  await fetchFacilities()
-  await fetchUserBookings()
-})
-
-// In your dashboard component's onMounted
-onMounted(async () => {
-  bookingForm.value.date = new Date().toISOString().substr(0, 10)
+  await fetchUser()
   await fetchFacilities()
   await fetchUserBookings()
 
   // Set up real-time subscriptions
   const facilitiesChannel = supabase
     .channel('facilities_changes')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'facilities' }, () =>
-      fetchFacilities(),
-    )
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'facilities' }, fetchFacilities)
     .subscribe()
 
   const bookingsChannel = supabase
     .channel('bookings_changes')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () =>
-      fetchUserBookings(),
-    )
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, fetchUserBookings)
     .subscribe()
 
   // Clean up on unmount
@@ -184,67 +218,12 @@ onMounted(async () => {
     supabase.removeChannel(bookingsChannel)
   })
 })
-
-// Add to your dashboard component
-const user = ref(null)
-
-async function fetchUser() {
-  const {
-    data: { user: userData },
-  } = await supabase.auth.getUser()
-  user.value = userData
-}
-
-async function handleLogout() {
-  try {
-    const { error } = await supabase.auth.signOut()
-    if (error) throw error
-    router.push({ name: 'login' })
-  } catch (error) {
-    console.error('Error logging out:', error.message)
-  }
-}
-
-// Call fetchUser in onMounted
-
-// Add these refs
-const loadingFacilities = ref(false)
-const loadingBookings = ref(false)
-const error = ref(null)
-
-// Booking Conflict Detection
-async function checkBookingConflict() {
-  try {
-    const { data, error } = await supabase
-      .from('bookings')
-      .select('*')
-      .eq('facility_id', bookingForm.value.facility)
-      .eq('booking_date', bookingForm.value.date)
-      .or(
-        `and(start_time.lte.${bookingForm.value.endTime},end_time.gte.${bookingForm.value.startTime})`,
-      )
-
-    if (error) throw error
-
-    return data.length > 0
-  } catch (error) {
-    console.error('Error checking booking conflicts:', error.message)
-    return false
-  }
-}
 </script>
-
-<style scoped>
-.text-shadow {
-  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
-}
-</style>
 
 <template>
   <AppLayout>
     <template #content>
       <v-container fluid>
-        
         <!-- Header Section -->
         <v-row class="mb-6 d-flex justify-center align-center">
           <v-col cols="12">
@@ -280,7 +259,7 @@ async function checkBookingConflict() {
             </v-card>
           </v-col>
         </v-row>
-        
+
         <!-- Tabs for Different Views -->
         <v-tabs v-model="tab" grow>
           <v-tab value="facilities">Facilities</v-tab>
@@ -291,12 +270,7 @@ async function checkBookingConflict() {
         <v-window v-model="tab">
           <!-- Facilities Tab -->
           <v-window-item value="facilities">
-            <FacilitiesTab
-              :facilities="facilities"
-              :error="error"
-              :loading-facilities="loadingFacilities"
-              @open-booking-dialog="openBookingDialog"
-            />
+            <FacilitiesTab :facilities="facilities" :error="error" :loading="loadingFacilities" />
           </v-window-item>
 
           <!-- My Bookings Tab -->
@@ -304,20 +278,32 @@ async function checkBookingConflict() {
             <BookingsTab
               :user-bookings="userBookings"
               @cancel-booking="cancelBooking"
+              @refresh-bookings="fetchUserBookings"
             />
           </v-window-item>
 
           <!-- Class Schedules Tab -->
           <v-window-item value="schedules">
-            <SchedulesTab
-              :computer-labs="computerLabs"
-              :lecture-rooms="lectureRooms"
-            />
+            <SchedulesTab :computer-labs="computerLabs" :lecture-rooms="lectureRooms" />
           </v-window-item>
         </v-window>
-
-        <!-- Booking Dialog remains the same -->
       </v-container>
+      
+      <!-- Booking Form Dialog -->
+      <BookingsFormDialog
+        v-if="showBookingDialog"
+        :facility="selectedFacility"
+        :facilities="facilities"
+        @submit-booking="handleSubmitBooking"
+        @close="showBookingDialog = false"
+      />
+
     </template>
   </AppLayout>
 </template>
+
+<style scoped>
+.text-shadow {
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+}
+</style>

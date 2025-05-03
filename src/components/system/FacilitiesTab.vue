@@ -87,10 +87,10 @@ onMounted(async () => {
           @click="emit('open-booking-dialog', facility)"
         >
           <v-img 
-            :src="facility.image" 
+            :src="facility.image_url" 
             height="150" 
             cover 
-            class="facility-image"
+            class="facility-image_url"
           >
             <v-card-title class="facility-title text-shadow">
               {{ facility.name }}
@@ -103,11 +103,11 @@ onMounted(async () => {
                 Capacity: {{ facility.capacity }}
               </span>
               <v-chip 
-                :color="getStatusColor(facility.available)" 
+                :color="getStatusColor(facility.is_available)" 
                 small
                 class="facility-status"
               >
-                {{ facility.available ? 'Available' : 'Booked' }}
+                {{ facility.is_available ? 'Available' : 'Booked' }}
               </v-chip>
             </div>
 
@@ -139,7 +139,7 @@ onMounted(async () => {
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
-.facility-image {
+.facility-image_url {
   position: relative;
 }
 
