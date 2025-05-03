@@ -1,9 +1,6 @@
 <script setup>
 import { onMounted, computed } from 'vue';
-import { useFacilitiesStore } from '@/stores/facilities';
 
-// Store
-const facilitiesStore = useFacilitiesStore();
 
 // Props
 const props = defineProps({
