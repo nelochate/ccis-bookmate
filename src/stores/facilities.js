@@ -14,10 +14,9 @@ export const useFacilitiesStore = defineStore('facilities', () => {
     loading.value = true;
     error.value = null;
     try {
-      // Use Supabase client instead of fetch()
       const { data, error: sbError } = await supabase
-        .from('facilities') // Your table name
-        .select('*'); // Select all columns (or specify needed ones)
+        .from('facilities')
+        .select('*');
 
       if (sbError) throw sbError;
 
@@ -25,7 +24,7 @@ export const useFacilitiesStore = defineStore('facilities', () => {
     } catch (err) {
       error.value = err.message;
       console.error('Supabase error fetching facilities:', err);
-      facilities.value = []; // Reset on error
+      facilities.value = [];
     } finally {
       loading.value = false;
     }

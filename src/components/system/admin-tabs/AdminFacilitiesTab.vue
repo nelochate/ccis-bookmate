@@ -45,11 +45,24 @@ const facilityForm = ref({
   id: null,
   name: '',
   type: 'computer_lab',
-  capacity: '',
+  capacity: null,
   location: '',
   is_available: true,
   image_url: ''
 });
+
+// Reset form function
+const resetForm = () => {
+  facilityForm.value = {
+    id: null,
+    name: '',
+    type: 'computer_lab',
+    capacity: null,
+    location: '',
+    is_available: true,
+    image_url: ''
+  };
+};
 
 // Fetch facilities from Supabase
 const fetchFacilities = async () => {
@@ -79,17 +92,13 @@ onMounted(() => {
 
 const openFacilityDialog = (facility = null) => {
   if (facility) {
-    facilityForm.value = { ...facility };
-  } else {
-    facilityForm.value = {
-      id: null,
-      name: '',
-      type: 'computer_lab',
-      capacity: '',
-      location: '',
-      is_available: true,
-      image_url: ''
+    // Make sure capacity is a number
+    facilityForm.value = { 
+      ...facility,
+      capacity: facility.capacity ? Number(facility.capacity) : null
     };
+  } else {
+    resetForm();
   }
   facilityDialog.value = true;
 };
@@ -98,17 +107,22 @@ const saveFacility = async () => {
   try {
     localLoading.value = true;
     
+    // Prepare the data to be saved
+    const facilityData = {
+      name: facilityForm.value.name,
+      type: facilityForm.value.type,
+      capacity: facilityForm.value.capacity ? Number(facilityForm.value.capacity) : null,
+      location: facilityForm.value.location,
+      is_available: facilityForm.value.is_available,
+      image_url: facilityForm.value.image_url
+    };
+
     if (facilityForm.value.id) {
       // Update existing facility
       const { data, error } = await supabase
         .from('facilities')
         .update({
-          name: facilityForm.value.name,
-          type: facilityForm.value.type,
-          capacity: facilityForm.value.capacity,
-          location: facilityForm.value.location,
-          is_available: facilityForm.value.is_available,
-          image_url: facilityForm.value.image_url,
+          ...facilityData,
           updated_at: new Date().toISOString()
         })
         .eq('id', facilityForm.value.id)
@@ -116,17 +130,10 @@ const saveFacility = async () => {
       
       if (error) throw error;
     } else {
-      // Create new facility - removed created_by reference
+      // Create new facility
       const { data, error } = await supabase
         .from('facilities')
-        .insert({
-          name: facilityForm.value.name,
-          type: facilityForm.value.type,
-          capacity: facilityForm.value.capacity,
-          location: facilityForm.value.location,
-          is_available: facilityForm.value.is_available,
-          image_url: facilityForm.value.image_url
-        })
+        .insert(facilityData)
         .select();
       
       if (error) throw error;
@@ -145,6 +152,8 @@ const saveFacility = async () => {
 };
 
 const deleteFacility = async (id) => {
+  if (!confirm('Are you sure you want to delete this facility?')) return;
+  
   try {
     localLoading.value = true;
     const { error } = await supabase
@@ -167,7 +176,6 @@ const deleteFacility = async (id) => {
 </script>
 
 <template>
-  <!-- Rest of your template remains exactly the same -->
   <div class="admin-facilities-tab">
     <!-- Error State -->
     <v-alert
@@ -180,7 +188,7 @@ const deleteFacility = async (id) => {
 
     <!-- Loading State -->
     <v-progress-linear
-      v-if="localLoading"
+      v-if="localLoading && !facilityDialog"
       indeterminate
       color="primary"
       class="mb-4"
@@ -246,7 +254,7 @@ const deleteFacility = async (id) => {
     </v-data-table>
 
     <!-- Facility Management Dialog -->
-    <v-dialog v-model="facilityDialog" max-width="600">
+    <v-dialog v-model="facilityDialog" max-width="600" persistent>
       <v-card>
         <v-card-title>
           {{ facilityForm.id ? 'Edit Facility' : 'Add New Facility' }}
@@ -284,12 +292,12 @@ const deleteFacility = async (id) => {
             </v-select>
             
             <v-text-field
-              v-model="facilityForm.capacity"
+              v-model.number="facilityForm.capacity"
               label="Capacity"
               type="number"
               required
               :rules="[
-                v => !!v || 'Capacity is required',
+                v => v !== null && v !== '' || 'Capacity is required',
                 v => v > 0 || 'Capacity must be positive'
               ]"
             ></v-text-field>
@@ -316,11 +324,12 @@ const deleteFacility = async (id) => {
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="error" @click="facilityDialog = false">Cancel</v-btn>
+          <v-btn color="error" @click="facilityDialog = false" :disabled="localLoading">Cancel</v-btn>
           <v-btn 
             color="primary" 
             @click="saveFacility"
             :loading="localLoading"
+            type="submit"
           >
             Save
           </v-btn>
