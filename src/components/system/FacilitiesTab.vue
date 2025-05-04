@@ -176,6 +176,7 @@ onMounted(async () => {
   right: 0;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
   padding: 16px;
+  color: white !important; 
 }
 
 .facility-details {

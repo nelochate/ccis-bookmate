@@ -66,12 +66,15 @@ async function fetchFacilities() {
 async function fetchUserBookings() {
   try {
     loadingBookings.value = true
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
     if (!user) return
 
     const { data, error: bookingsError } = await supabase
       .from('bookings')
-      .select(`
+      .select(
+        `
         id,
         purpose,
         date,
@@ -80,13 +83,14 @@ async function fetchUserBookings() {
         status,
         notes,
         facilities (id, name)
-      `)
+      `,
+      )
       .eq('user_id', user.id)
       .order('date', { ascending: true })
 
     if (bookingsError) throw bookingsError
 
-    userBookings.value = data.map(booking => ({
+    userBookings.value = data.map((booking) => ({
       id: booking.id,
       facilityId: booking.facilities?.id,
       facilityName: booking.facilities?.name || 'Unknown',
@@ -94,7 +98,7 @@ async function fetchUserBookings() {
       time: `${booking.start_time} - ${booking.end_time}`,
       purpose: booking.purpose,
       status: booking.status,
-      notes: booking.notes
+      notes: booking.notes,
     }))
 
     updateQuickStats()
@@ -107,9 +111,11 @@ async function fetchUserBookings() {
 
 function updateQuickStats() {
   quickStats.value[0].value = facilities.value?.length.toString() || '0'
-  quickStats.value[1].value = facilities.value?.filter(f => f.is_available).length.toString() || '0'
+  quickStats.value[1].value =
+    facilities.value?.filter((f) => f.is_available).length.toString() || '0'
   quickStats.value[2].value = userBookings.value?.length.toString() || '0'
-  quickStats.value[3].value = userBookings.value?.filter(b => b.status === 'pending').length.toString() || '0'
+  quickStats.value[3].value =
+    userBookings.value?.filter((b) => b.status === 'pending').length.toString() || '0'
 }
 
 async function handleSubmitBooking(bookingData) {
@@ -119,10 +125,12 @@ async function handleSubmitBooking(bookingData) {
 
     // Validate booking data
     const requiredFields = ['facility_id', 'date', 'start_time', 'end_time']
-    const missingFields = requiredFields.filter(field => !bookingData[field])
+    const missingFields = requiredFields.filter((field) => !bookingData[field])
     if (missingFields.length > 0) throw new Error(`Missing fields: ${missingFields.join(', ')}`)
 
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
     if (!user) throw new Error('User not authenticated')
 
     // Check for conflicts
@@ -144,7 +152,7 @@ async function handleSubmitBooking(bookingData) {
       .upsert({
         ...bookingData,
         user_id: user.id,
-        status: bookingData.status || 'pending'
+        status: bookingData.status || 'pending',
       })
       .select()
 
@@ -164,10 +172,7 @@ async function handleSubmitBooking(bookingData) {
 async function cancelBooking(booking) {
   try {
     loading.value = true
-    const { error: deleteError } = await supabase
-      .from('bookings')
-      .delete()
-      .eq('id', booking.id)
+    const { error: deleteError } = await supabase.from('bookings').delete().eq('id', booking.id)
 
     if (deleteError) throw deleteError
     await refreshAllData()
@@ -185,34 +190,37 @@ function openBookingDialog(facility) {
 </script>
 
 <template>
-  <AppLayout>
+<AppLayout>
     <template #content>
       <v-container fluid>
+        <!-- Header Card with hover effect -->
         <v-row class="mb-6 d-flex justify-center align-center">
           <v-col cols="12">
-            <v-card :color="theme === 'light' ? 'blue-grey-lighten-4' : 'blue-grey-darken-4'" class="pa-4">
-              <div class="d-flex justify-space-between align-center">
-                <div>
-                  <h1 class="text-h4 font-weight-bold">CCIS BookMate Dashboard</h1>
-                  <p class="text-subtitle-1">Manage your facility bookings</p>
-                </div>
-                <div>
-                  <v-btn color="primary" @click="openBookingDialog(null)" class="mr-2">
+            <v-card
+              :color="theme === 'light' ? 'blue-grey-darken-4' : 'blue-grey-darken-4'"
+              class="pa-4 header-card"
+              hover
+            >
+              <v-row class="d-flex justify-space-between align-center">
+                <v-col class="d-flex flex-column justify-center">
+                  <h1 class="text-h4 font-weight-bold mb-1">CCIS BookMate Dashboard</h1>
+                  <p class="text-subtitle-1 mb-0">Manage your facility bookings</p>
+                </v-col>
+                <v-col class="d-flex justify-end align-center" cols="auto">
+                  <v-btn color="primary" @click="openBookingDialog(null)" class="new-booking-btn">
                     <v-icon start>mdi-plus</v-icon>
                     New Booking
                   </v-btn>
-                  <v-btn @click="refreshAllData" icon>
-                    <v-icon>mdi-refresh</v-icon>
-                  </v-btn>
-                </div>
-              </div>
+                </v-col>
+              </v-row>
             </v-card>
           </v-col>
         </v-row>
 
+        <!-- Stats Cards with hover effects -->
         <v-row class="mb-6">
           <v-col v-for="stat in quickStats" :key="stat.title" cols="12" sm="6" md="3">
-            <v-card>
+            <v-card class="stat-card" hover>
               <v-card-text class="d-flex justify-space-between align-center">
                 <div>
                   <div class="text-subtitle-1">{{ stat.title }}</div>
@@ -224,10 +232,11 @@ function openBookingDialog(facility) {
           </v-col>
         </v-row>
 
-        <v-tabs v-model="tab" grow>
-          <v-tab value="facilities">Facilities</v-tab>
-          <v-tab value="bookings">My Bookings</v-tab>
-          <v-tab value="schedules">Schedules</v-tab>
+        <!-- Tabs with hover effect on items -->
+        <v-tabs v-model="tab" grow class="dashboard-tabs">
+          <v-tab value="facilities" class="tab-item">Facilities</v-tab>
+          <v-tab value="bookings" class="tab-item">My Bookings</v-tab>
+          <v-tab value="schedules" class="tab-item">Schedules</v-tab>
         </v-tabs>
 
         <v-window v-model="tab">
@@ -250,7 +259,7 @@ function openBookingDialog(facility) {
           </v-window-item>
         </v-window>
       </v-container>
-      
+
       <BookingsFormDialog
         v-if="showBookingDialog"
         :facility="selectedFacility"
@@ -263,7 +272,65 @@ function openBookingDialog(facility) {
 </template>
 
 <style scoped>
-.text-shadow {
-  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+.header-card {
+  transition: all 0.3s ease;
+  transform: translateY(0);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.header-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+
+.stat-card {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+
+.new-booking-btn {
+  transition: all 0.3s ease;
+}
+
+.new-booking-btn:hover {
+  transform: scale(1.05);
+}
+
+
+.tab-item {
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.tab-item:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.tab-item::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: currentColor;
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+
+.tab-item:hover::after {
+  width: 80%;
+}
+
+/* Add smooth transitions for window items */
+.v-window-item {
+  transition: opacity 0.3s ease;
 }
 </style>
