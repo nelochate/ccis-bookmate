@@ -190,7 +190,7 @@ function openBookingDialog(facility) {
 </script>
 
 <template>
-<AppLayout>
+  <AppLayout>
     <template #content>
       <v-container fluid>
         <!-- Header Card with hover effect -->
@@ -234,9 +234,30 @@ function openBookingDialog(facility) {
 
         <!-- Tabs with hover effect on items -->
         <v-tabs v-model="tab" grow class="dashboard-tabs" :touch="false">
-          <v-tab :touch="false" value="facilities" class="tab-item">Facilities</v-tab>
-          <v-tab :touch="false" value="bookings" class="tab-item">My Bookings</v-tab>
-          <v-tab :touch="false" value="schedules" class="tab-item">Schedules</v-tab>
+          <v-tab
+            :touch="false"
+            value="facilities"
+            class="tab-item"
+            :class="{ 'tab-item--active': tab === 'facilities' }"
+          >
+            Facilities
+          </v-tab>
+          <v-tab
+            :touch="false"
+            value="bookings"
+            class="tab-item"
+            :class="{ 'tab-item--active': tab === 'bookings' }"
+          >
+            My Bookings
+          </v-tab>
+          <v-tab
+            :touch="false"
+            value="schedules"
+            class="tab-item"
+            :class="{ 'tab-item--active': tab === 'schedules' }"
+          >
+            Schedules
+          </v-tab>
         </v-tabs>
 
         <v-window :touch="false" v-model="tab">
@@ -283,7 +304,6 @@ function openBookingDialog(facility) {
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
-
 .stat-card {
   transition: all 0.3s ease;
   cursor: pointer;
@@ -294,7 +314,6 @@ function openBookingDialog(facility) {
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
 
-
 .new-booking-btn {
   transition: all 0.3s ease;
 }
@@ -303,14 +322,24 @@ function openBookingDialog(facility) {
   transform: scale(1.05);
 }
 
-
 .tab-item {
   transition: all 0.3s ease;
   position: relative;
+  padding: 10px 20px;
+  border: 2px solid transparent; 
+  border-radius: 8px;
 }
 
 .tab-item:hover {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: rgba(0, 0, 0, 0.05); 
+  border-color: var(--v-primary-base); 
+}
+
+.tab-item--active {
+  background-color: var(--v-primary-lighten5);
+  border-color: var(--v-primary-base); 
+  color: var(--v-primary-darken2); 
+  font-weight: bold;
 }
 
 .tab-item::after {

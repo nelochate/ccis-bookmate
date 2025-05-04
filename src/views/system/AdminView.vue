@@ -329,7 +329,7 @@ onUnmounted(() => {
             sm="6" 
             md="3"
           >
-            <v-card>
+            <v-card class="quick-stat-card">
               <v-card-text class="d-flex justify-space-between align-center">
                 <div>
                   <div class="text-subtitle-1">{{ stat.title }}</div>
@@ -342,14 +342,19 @@ onUnmounted(() => {
         </v-row>
 
         <!-- Tabs for Different Views -->
-        <v-tabs v-model="tab" grow class="mb-6" :touch="false">
+        <v-tabs 
+          v-model="tab" 
+          grow 
+          class="mb-6 custom-tabs" 
+          :touch="false"
+        >
           <v-tab :touch="false" value="facilities">
             <v-icon start>mdi-office-building</v-icon>
             Facilities
           </v-tab>
           <v-tab :touch="false" value="bookings">
             <v-icon start>mdi-bookmark</v-icon>
-            Bookings
+            All Bookings
           </v-tab>
           <v-tab :touch="false" value="users">
             <v-icon start>mdi-account-group</v-icon>
@@ -357,7 +362,7 @@ onUnmounted(() => {
           </v-tab>
         </v-tabs>
 
-        <v-window v-model="tab">
+        <v-window :touch="false" v-model="tab">
           <!-- Facilities Tab -->
           <v-window-item value="facilities">
             <AdminFacilitiesTab

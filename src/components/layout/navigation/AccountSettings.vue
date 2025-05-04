@@ -4,46 +4,34 @@ import AlertNotification from '@/components/common/AlertNotification.vue'
 import { useAuthUserStore } from '@/stores/authUser'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { supabase } from '@/utils/supabase'
 
 const authStore = useAuthUserStore()
 const router = useRouter()
-const formAction = ref({ loading: false, error: null })
 const showDialog = ref(false)
+const deletionState = ref({
+  loading: false,
+  error: null,
+  step: null
+})
 
 const deleteAccount = async () => {
-  formAction.value = { loading: true, error: null }
+  deletionState.value = { 
+    loading: true, 
+    error: null,
+    step: 'Starting account deletion...'
+  }
   
   try {
-    // 1. Delete from user_roles
-    const { error: rolesError } = await supabase
-      .from('user_roles')
-      .delete()
-      .eq('user_id', authStore.user.id)
-
-    if (rolesError) throw new Error(`Roles deletion failed: ${rolesError.message}`)
-
-    // 2. Delete from profiles (RLS policy: auth.uid() = user_id)
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .delete()
-      .eq('user_id', authStore.user.id)
-
-    if (profileError) throw new Error(`Profile deletion failed: ${profileError.message}`)
-
-    // 3. Delete auth user
-    const { error: authError } = await supabase.auth.admin.deleteUser(authStore.user.id)
-    if (authError) throw new Error(`Auth user deletion failed: ${authError.message}`)
-
-    // 4. Logout and redirect
-    await authStore.logoutUser()
-    await router.push('/')
+    deletionState.value.step = 'Removing user data...'
+    await authStore.deleteUserAccount()
     
+    deletionState.value.step = 'Finalizing...'
+    await router.push('/')
   } catch (err) {
-    formAction.value.error = err.message
+    deletionState.value.error = err.message || 'Account deletion failed'
     console.error('Deletion error:', err)
   } finally {
-    formAction.value.loading = false
+    deletionState.value.loading = false
     showDialog.value = false
   }
 }
@@ -53,70 +41,77 @@ const deleteAccount = async () => {
   <AppLayout>
     <template #content>
       <v-container class="max-w-xl py-8">
-        <!-- Back Button -->
-        <v-btn
-          variant="text"
-          @click="router.go(-1)"
-          class="mb-6"
-          prepend-icon="mdi-arrow-left"
-        >
-          Back
-        </v-btn>
+        <!-- Header with Back Button -->
+        <div class="d-flex align-center mb-6">
+          <v-btn
+            variant="text"
+            @click="router.go(-1)"
+            prepend-icon="mdi-arrow-left"
+            class="mr-4"
+          >
+            Back
+          </v-btn>
+          <h1 class="text-h4 font-weight-bold">Account Settings</h1>
+        </div>
 
         <!-- Error Alert -->
         <AlertNotification 
-          v-if="formAction.error"
-          :message="formAction.error"
+          v-if="deletionState.error"
+          :message="deletionState.error"
           type="error"
           class="mb-6"
         />
 
-        <!-- Main Card -->
+        <!-- Deletion Card -->
         <v-card class="pa-6 border" elevation="0">
-          <div class="d-flex align-center mb-4">
+          <v-card-title class="d-flex align-center text-h5 px-0 mb-4">
             <v-icon color="error" size="32" class="mr-3">mdi-account-remove</v-icon>
-            <v-card-title class="text-h5 px-0">Delete Your Account</v-card-title>
-          </div>
+            Delete Account
+          </v-card-title>
 
           <v-divider class="my-4"></v-divider>
 
           <v-card-text>
-            <div class="mb-6">
-              <p class="text-body-1 mb-2">This action will permanently remove:</p>
-              <ul class="text-body-2 pl-4">
-                <li class="mb-2">
-                  <v-icon small class="mr-2">mdi-account</v-icon>
-                  Your profile information
-                </li>
-                <li class="mb-2">
-                  <v-icon small class="mr-2">mdi-shield-account</v-icon>
-                  All role assignments
-                </li>
-                <li>
-                  <v-icon small class="mr-2">mdi-key</v-icon>
-                  Login credentials
-                </li>
-              </ul>
-            </div>
+            <v-list lines="two" class="mb-6">
+              <v-list-item
+                v-for="item in [
+                  { icon: 'mdi-account', text: 'Your profile information' },
+                  { icon: 'mdi-shield-account', text: 'All role assignments' },
+                  { icon: 'mdi-key', text: 'Login access' }
+                ]"
+                :key="item.icon"
+                class="pl-0"
+              >
+                <template v-slot:prepend>
+                  <v-icon :icon="item.icon" class="mr-3"></v-icon>
+                </template>
+                <v-list-item-title>{{ item.text }}</v-list-item-title>
+              </v-list-item>
+            </v-list>
 
             <v-alert
               type="warning"
               variant="tonal"
+              border="start"
               class="mb-6"
             >
               <template v-slot:prepend>
-                <v-icon color="warning">mdi-alert-circle</v-icon>
+                <v-icon color="warning">mdi-alert</v-icon>
               </template>
-              This action cannot be undone. All data will be permanently erased.
+              <strong>Important:</strong> This will permanently remove your account data but may not immediately delete your authentication record.
             </v-alert>
+
+            <div v-if="deletionState.step" class="text-caption text-medium-emphasis">
+              Status: {{ deletionState.step }}
+            </div>
           </v-card-text>
 
-          <v-card-actions class="justify-end">
+          <v-card-actions class="justify-end px-0">
             <v-btn
               color="error"
               variant="flat"
               @click="showDialog = true"
-              :disabled="formAction.loading"
+              :disabled="deletionState.loading"
               prepend-icon="mdi-delete"
               class="px-6"
             >
@@ -128,17 +123,36 @@ const deleteAccount = async () => {
         <!-- Confirmation Dialog -->
         <v-dialog v-model="showDialog" max-width="450">
           <v-card class="pa-6">
-            <div class="d-flex align-center mb-4">
+            <v-card-title class="d-flex align-center text-h5 px-0 mb-4">
               <v-icon color="error" size="32" class="mr-3">mdi-alert-octagon</v-icon>
-              <v-card-title class="text-h5 px-0">Final Confirmation</v-card-title>
-            </div>
+              Confirm Deletion
+            </v-card-title>
 
             <v-card-text>
-              <p class="text-body-1 mb-4">
-                You are about to permanently delete your account and all associated data.
+              <p class="text-body-1 mb-2">
+                You are about to:
               </p>
+              <v-chip
+                color="red-darken-4"
+                variant="outlined"
+                class="mb-4"
+                label
+              >
+                <v-icon start>mdi-identifier</v-icon>
+                {{ authStore.userId }}
+              </v-chip>
+              
+              <v-alert
+                type="error"
+                variant="tonal"
+                border="start"
+                class="mb-4"
+              >
+                This will permanently remove your account data from our systems.
+              </v-alert>
+              
               <p class="text-body-2 text-medium-emphasis">
-                User ID: <code>{{ authStore.user?.id }}</code>
+                Your authentication record may remain in the system until cleaned by administrators.
               </p>
             </v-card-text>
 
@@ -146,7 +160,7 @@ const deleteAccount = async () => {
               <v-btn
                 variant="text"
                 @click="showDialog = false"
-                :disabled="formAction.loading"
+                :disabled="deletionState.loading"
                 class="mr-3"
               >
                 Cancel
@@ -155,10 +169,10 @@ const deleteAccount = async () => {
                 color="error"
                 variant="flat"
                 @click="deleteAccount"
-                :loading="formAction.loading"
+                :loading="deletionState.loading"
                 prepend-icon="mdi-delete-forever"
               >
-                Confirm Deletion
+                Confirm Permanent Removal
               </v-btn>
             </v-card-actions>
           </v-card>
@@ -171,16 +185,11 @@ const deleteAccount = async () => {
 <style scoped>
 .max-w-xl {
   max-width: 36rem;
+  margin: 0 auto;
 }
 
 .border {
-  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-}
-
-code {
-  background: rgba(var(--v-theme-error), 0.1);
-  padding: 2px 4px;
-  border-radius: 4px;
-  color: rgb(var(--v-theme-error));
+  border: thin solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-radius: 12px;
 }
 </style>
