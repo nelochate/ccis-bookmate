@@ -109,7 +109,7 @@ async function handleSubmitBooking(bookingData) {
 <template>
   <div>
     <div class="d-flex justify-end mb-4">
-      <v-btn color="primary" @click="openBookingDialog(null)" class="mr-4">
+      <v-btn @click="openBookingDialog(null)" class="mr-4">
         <v-icon>mdi-plus</v-icon></v-btn>
       
       <v-btn @click="handleRefresh" :loading="loading">
