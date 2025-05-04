@@ -203,7 +203,7 @@ function openBookingDialog(facility) {
             >
               <v-row class="d-flex justify-space-between align-center">
                 <v-col class="d-flex flex-column justify-center">
-                  <h1 class="text-h4 font-weight-bold mb-1">CCIS BookMate Dashboard</h1>
+                  <h1 class="text-h4 font-weight-bold mb-1">Welcome To Your Dashboard</h1>
                   <p class="text-subtitle-1 mb-0">Manage your facility bookings</p>
                 </v-col>
                 <v-col class="d-flex justify-end align-center" cols="auto">
@@ -233,13 +233,13 @@ function openBookingDialog(facility) {
         </v-row>
 
         <!-- Tabs with hover effect on items -->
-        <v-tabs v-model="tab" grow class="dashboard-tabs">
-          <v-tab value="facilities" class="tab-item">Facilities</v-tab>
-          <v-tab value="bookings" class="tab-item">My Bookings</v-tab>
-          <v-tab value="schedules" class="tab-item">Schedules</v-tab>
+        <v-tabs v-model="tab" grow class="dashboard-tabs" :touch="false">
+          <v-tab :touch="false" value="facilities" class="tab-item">Facilities</v-tab>
+          <v-tab :touch="false" value="bookings" class="tab-item">My Bookings</v-tab>
+          <v-tab :touch="false" value="schedules" class="tab-item">Schedules</v-tab>
         </v-tabs>
 
-        <v-window v-model="tab">
+        <v-window :touch="false" v-model="tab">
           <v-window-item value="facilities">
             <FacilitiesTab :facilities="facilities" :error="error" :loading="loadingFacilities" />
           </v-window-item>

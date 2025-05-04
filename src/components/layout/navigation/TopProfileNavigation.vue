@@ -69,7 +69,7 @@ const onLogout = async () => {
 
         <v-divider class="my-3"></v-divider>
 
-        <v-btn prepend-icon="mdi-wrench" variant="plain" to="/account/settings">
+        <v-btn prepend-icon="mdi-wrench" variant="plain" to="/account-settings">
           Account Settings
         </v-btn>
 

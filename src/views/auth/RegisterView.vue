@@ -24,11 +24,10 @@ const { mobile } = useDisplay()
               height="auto"
               style="box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3)"
             ></v-img>
-              <h2 class="font-weight-bold text-h5 mb-3">Welcome to CCIS BookMate</h2>
-              <p class="text-body-1 text-medium-emphasis">
-                Easily book and manage facilities within the CCIS building — your centralized
-                platform for hassle-free scheduling and access.
-              </p>
+            <h3 class="font-weight-thin text-h5 mb-3" style="font-style: italic;"> " Hiraya Manawari " </h3>
+            <p class="text-body-1 text-medium-emphasis" style="font-style: italic;">
+              Reach your dreams with ease, seamlessly book and manage your facility reservations at Hiraya Hall with CCIS BookMate.
+            </p>
           </v-card>
         </v-col>
 

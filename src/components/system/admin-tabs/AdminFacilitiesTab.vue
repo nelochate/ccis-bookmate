@@ -209,7 +209,6 @@ const deleteFacility = async (id) => {
         @click="fetchFacilities"
         :loading="localLoading"
       >
-        Refresh
       </v-btn>
     </div>
 
@@ -234,10 +233,9 @@ const deleteFacility = async (id) => {
 
       <template #item.actions="{ item }">
         <v-btn
-          icon
+          icon="none"
           size="small"
-          color="primary"
-          class="mr-2"
+          class="mr-3"
           @click.stop="openFacilityDialog(item)"
         >
           <v-icon>mdi-pencil</v-icon>
@@ -245,10 +243,10 @@ const deleteFacility = async (id) => {
         <v-btn
           icon
           size="small"
-          color="error"
+        
           @click.stop="deleteFacility(item.id)"
         >
-          <v-icon>mdi-delete</v-icon>
+          <v-icon>mdi-delete-outline</v-icon>
         </v-btn>
       </template>
     </v-data-table>

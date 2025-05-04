@@ -11,6 +11,7 @@ import DashboardView from '@/views/system/DashboardView.vue'
 import AdminView from '@/views/system/AdminView.vue'
 
 import { useAuthUserStore } from '@/stores/authUser'
+import AccountSettings from '@/components/layout/navigation/AccountSettings.vue'
 // Toggle for system deface mode
 const isDefaced = false
 
@@ -77,6 +78,12 @@ export const routes = isDefaced
         name: 'admin',
         component: AdminView,
         meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: '/account-settings',
+        name: 'account-settings',
+        component: AccountSettings,
+        meta: { requiresAuth: true}
       },
 
       // Errors Pages

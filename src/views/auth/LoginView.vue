@@ -23,7 +23,7 @@ const { mobile } = useDisplay()
             ></v-img>
             <h3 class="font-weight-thin text-h5 mb-3" style="font-style: italic;"> " Hiraya Manawari " </h3>
             <p class="text-body-1 text-medium-emphasis" style="font-style: italic;">
-              Reach your dreams with ease, seamlessly book and manage your facility reservations at HirayaHall with CCIS BookMate.
+              Reach your dreams with ease, seamlessly book and manage your facility reservations at Hiraya Hall with CCIS BookMate.
             </p>
           </v-card>
         </v-col>
