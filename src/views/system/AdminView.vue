@@ -299,11 +299,11 @@ onUnmounted(() => {
           <v-col cols="12">
             <v-card
               class="pa-4"
-              :color="theme === 'light' ? 'blue-grey-lighten-4' : 'blue-grey-darken-4'"
+              :color="theme === 'light' ? 'blue-grey-darken-3' : 'blue-grey-darken-4'"
             >
               <div class="d-flex justify-space-between align-center">
                 <div>
-                  <h1 class="text-h5 text-sm-h4 font-weight-bold">Admin Dashboard</h1>
+                  <h1 class="text-h5 text-sm-h4 font-weight-bold">Welcome To Your Dashboard Admin!</h1>
                   <p class="text-subtitle-1 mt-1">
                     Manage facilities, bookings, and users
                   </p>
@@ -342,16 +342,16 @@ onUnmounted(() => {
         </v-row>
 
         <!-- Tabs for Different Views -->
-        <v-tabs v-model="tab" grow class="mb-6">
-          <v-tab value="facilities">
+        <v-tabs v-model="tab" grow class="mb-6" :touch="false">
+          <v-tab :touch="false" value="facilities">
             <v-icon start>mdi-office-building</v-icon>
             Facilities
           </v-tab>
-          <v-tab value="bookings">
+          <v-tab :touch="false" value="bookings">
             <v-icon start>mdi-bookmark</v-icon>
             Bookings
           </v-tab>
-          <v-tab value="users">
+          <v-tab :touch="false" value="users">
             <v-icon start>mdi-account-group</v-icon>
             Users
           </v-tab>
