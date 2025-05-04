@@ -123,7 +123,7 @@ const saveFacility = async () => {
         .from('facilities')
         .update({
           ...facilityData,
-          updated_at: new Date().toISOString()
+          created_at: new Date().toISOString()
         })
         .eq('id', facilityForm.value.id)
         .select();

@@ -6,10 +6,10 @@ defineProps({
 });
 
 const headers = [
-  { title: 'Name', key: 'name' },
+  { title: 'Username', key: 'name' },
   { title: 'Email', key: 'email' },
   { title: 'Role', key: 'role' },
-  { title: 'Joined', key: 'created_at' },
+  { title: 'Joined', key: 'updated_at' },
   { title: 'Actions', key: 'actions' }
 ];
 </script>
