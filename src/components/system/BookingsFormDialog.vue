@@ -1,6 +1,9 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { supabase } from '@/utils/supabase'
+import { useFacilitiesStore } from '@/stores/facilities'
+
+const facilitiesStore = useFacilitiesStore()
 
 const props = defineProps({
   facility: {
@@ -11,7 +14,7 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
-  booking: { // Add booking prop for edit/delete mode
+  booking: {
     type: Object,
     default: null
   }
@@ -24,7 +27,12 @@ const loading = ref(false)
 const error = ref(null)
 const isDeleteConfirmationOpen = ref(false)
 
-// Initialize form with booking data if in edit mode
+// Use facilities from store if not provided via props
+const availableFacilities = computed(() => {
+  return props.facilities.length > 0 ? props.facilities : facilitiesStore.facilities
+})
+
+// Initialize form
 const form = ref({
   id: props.booking?.id || null,
   facility_id: props.booking?.facility_id || props.facility?.id || null,
@@ -36,12 +44,21 @@ const form = ref({
   status: props.booking?.status || 'pending'
 })
 
-// Reset form when facility prop changes
+// Get facility name for display
+const selectedFacilityName = computed(() => {
+  if (props.facility) return props.facility.name
+  if (form.value.facility_id) {
+    const facility = availableFacilities.value.find(f => f.id === form.value.facility_id)
+    return facility?.name || 'Selected Facility'
+  }
+  return 'Select Facility'
+})
+
+// Watch for changes
 watch(() => props.facility, (newFacility) => {
   form.value.facility_id = newFacility?.id || null
 })
 
-// Watch for booking prop changes (for edit mode)
 watch(() => props.booking, (newBooking) => {
   if (newBooking) {
     form.value = {
@@ -75,11 +92,9 @@ async function submit() {
     loading.value = true
     error.value = null
     
-    // Get current authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) throw new Error('User not authenticated')
 
-    // Prepare the booking data
     const bookingData = {
       user_id: user.id,
       facility_id: form.value.facility_id,
@@ -93,27 +108,22 @@ async function submit() {
 
     let result
     if (form.value.id) {
-      // Update existing booking
       const { data, error: updateError } = await supabase
         .from('bookings')
         .update(bookingData)
         .eq('id', form.value.id)
         .select()
-
       if (updateError) throw updateError
       result = data[0]
     } else {
-      // Create new booking
       const { data, error: insertError } = await supabase
         .from('bookings')
         .insert(bookingData)
         .select()
-
       if (insertError) throw insertError
       result = data[0]
     }
 
-    // Success - emit event and reset
     emit('submit-success', result)
     dialog.value = false
     resetForm()
@@ -140,7 +150,6 @@ async function deleteBooking() {
 
     if (deleteError) throw deleteError
 
-    // Success - emit event and close
     emit('delete-success', form.value.id)
     dialog.value = false
     resetForm()
@@ -165,23 +174,26 @@ function close() {
   <v-dialog v-model="dialog" max-width="600" persistent>
     <v-card>
       <v-card-title>
-        {{ form.id ? 'Edit Booking' : facility ? `Book ${facility.name}` : 'New Booking' }}
+        {{ form.id ? 'Edit Booking' : `Book ${selectedFacilityName}` }}
       </v-card-title>
       
-      <v-alert
-        v-if="error"
-        type="error"
-        class="ma-4"
-      >
+      <v-alert v-if="error" type="error" class="ma-4">
         {{ error }}
       </v-alert>
       
       <v-card-text>
         <v-form @submit.prevent="submit">
+          <!-- Show facility chip if facility is preselected -->
+          <v-chip v-if="facility" class="mb-4" color="primary" size="large">
+            <v-icon start>mdi-office-building</v-icon>
+            {{ facility.name }}
+          </v-chip>
+          
+          <!-- Show select only if no specific facility is preselected -->
           <v-select
             v-if="!facility"
             v-model="form.facility_id"
-            :items="facilities"
+            :items="availableFacilities"
             label="Select Facility"
             item-title="name"
             item-value="id"
@@ -202,23 +214,29 @@ function close() {
             label="Date"
             required
             :disabled="loading"
+            :min="new Date().toISOString().substr(0, 10)"
           />
 
-          <v-text-field
-            v-model="form.start_time"
-            type="time"
-            label="Start Time"
-            required
-            :disabled="loading"
-          />
-
-          <v-text-field
-            v-model="form.end_time"
-            type="time"
-            label="End Time"
-            required
-            :disabled="loading"
-          />
+          <v-row>
+            <v-col cols="6">
+              <v-text-field
+                v-model="form.start_time"
+                type="time"
+                label="Start Time"
+                required
+                :disabled="loading"
+              />
+            </v-col>
+            <v-col cols="6">
+              <v-text-field
+                v-model="form.end_time"
+                type="time"
+                label="End Time"
+                required
+                :disabled="loading"
+              />
+            </v-col>
+          </v-row>
 
           <v-textarea
             v-model="form.notes"

@@ -1,39 +1,67 @@
 <script setup>
-import { onMounted, computed } from 'vue';
+import { computed, onMounted } from 'vue';
+import { useFacilitiesStore } from '@/stores/facilities';
 
+const facilitiesStore = useFacilitiesStore();
 
-// Props
+// Props with more defensive defaults
 const props = defineProps({
-  facilities: {
-    type: Array,
-    required: true
+  useLocalFacilities: {
+    type: Boolean,
+    default: true
   },
-  error: String,
-  loadingFacilities: Boolean
+  externalFacilities: {
+    type: Array,
+    default: () => [], // Always ensure array default
+    validator: (value) => Array.isArray(value) // Type checking
+  },
+  error: {
+    type: String,
+    default: ''
+  },
+  loadingFacilities: {
+    type: Boolean,
+    default: false
+  }
 });
 
 // Emits
 const emit = defineEmits(['open-booking-dialog']);
 
-// Computed
-const isEmpty = computed(() => props.facilities.length === 0);
+// Safe computed properties
+const displayedFacilities = computed(() => {
+  try {
+    return props.useLocalFacilities 
+      ? (facilitiesStore.facilities || [])
+      : (props.externalFacilities || []);
+  } catch (error) {
+    console.error('Error accessing facilities:', error);
+    return [];
+  }
+});
+
+const isEmpty = computed(() => {
+  try {
+    return displayedFacilities.value.length === 0;
+  } catch (error) {
+    console.error('Error checking if facilities are empty:', error);
+    return true; // Treat errors as empty state
+  }
+});
 
 // Methods
 function getStatusColor(status) {
   return status ? 'success' : 'error';
 }
 
-// Lifecycle
+// Lifecycle with error handling
 onMounted(async () => {
-
-  facilitiesStore.getFacilitiesFromApi ()
-  console.log(facilitiesStore.facilities)
-  
-  try {
-    await facilitiesStore.getFacilitiesFromApi();
-    console.log('Facilities loaded:', facilitiesStore.facilities);
-  } catch (error) {
-    console.error('Error loading facilities:', error);
+  if (props.useLocalFacilities) {
+    try {
+      await facilitiesStore.getFacilitiesFromApi();
+    } catch (error) {
+      console.error('Failed to load facilities:', error);
+    }
   }
 });
 </script>
@@ -71,7 +99,7 @@ onMounted(async () => {
       class="mt-4 facilities-grid"
     >
       <v-col
-        v-for="facility in facilities"
+        v-for="facility in displayedFacilities"
         :key="facility.id"
         cols="12"
         sm="6"
@@ -120,6 +148,7 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+/* Your existing styles remain unchanged */
 .facilities-container {
   padding: 16px;
 }

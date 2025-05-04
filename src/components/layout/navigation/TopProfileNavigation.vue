@@ -18,19 +18,21 @@ const formAction = ref({
 
 // Logout Functionality
 const onLogout = async () => {
-  /// Reset Form Action utils; Turn on processing at the same time
-  formAction.value = { ...formActionDefault, formProcess: true }
-
-  // Get supabase logout functionality
-  await supabase.auth.signOut()
-
-  formAction.value.formProcess = false
-  // Reset State
-  setTimeout(() => {
-    authStore.$reset()
-  }, 2500)
-  // Redirect to homepage
-  router.replace('/')
+  try {
+    formAction.value = { ...formActionDefault, formProcess: true };
+    
+    await supabase.auth.signOut();
+    authStore.$reset();
+    formAction.value.formProcess = false;
+    
+    // This will force components to reinitialize
+    router.push('/');
+    window.location.reload();
+    
+  } catch (err) {
+    formAction.value.formProcess = false;
+    console.error('Logout error:', err);
+  }
 }
 </script>
 

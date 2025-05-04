@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import { supabase } from '@/utils/supabase'
 
@@ -15,6 +15,12 @@ const tab = ref('facilities')
 // Add these new refs for dialog control
 const showBookingDialog = ref(false)
 const selectedFacility = ref(null)
+
+  // Clean up on unmount
+  onUnmounted(() => {
+    supabase.removeChannel(facilitiesChannel)
+    supabase.removeChannel(bookingsChannel)
+  })
 
 // Add this function to handle opening the dialog
 function openBookingDialog(facility) {
@@ -195,29 +201,7 @@ async function handleLogout() {
   }
 }
 
-// Initialize
-onMounted(async () => {
-  await fetchUser()
-  await fetchFacilities()
-  await fetchUserBookings()
 
-  // Set up real-time subscriptions
-  const facilitiesChannel = supabase
-    .channel('facilities_changes')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'facilities' }, fetchFacilities)
-    .subscribe()
-
-  const bookingsChannel = supabase
-    .channel('bookings_changes')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, fetchUserBookings)
-    .subscribe()
-
-  // Clean up on unmount
-  onUnmounted(() => {
-    supabase.removeChannel(facilitiesChannel)
-    supabase.removeChannel(bookingsChannel)
-  })
-})
 </script>
 
 <template>
@@ -294,7 +278,7 @@ onMounted(async () => {
         v-if="showBookingDialog"
         :facility="selectedFacility"
         :facilities="facilities"
-        @submit-booking="handleSubmitBooking"
+        @submit-success="handleSubmitBooking"
         @close="showBookingDialog = false"
       />
 
