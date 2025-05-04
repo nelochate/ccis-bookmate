@@ -18,9 +18,9 @@ export const useAuthUsersStore = defineStore('authUsers', () => {
     try {
       // Note: This requires appropriate permissions in your Supabase setup
       const { data, error } = await supabase
-        .from('users_profiles')
-        .select('id, email, raw_user_meta_data, created_at, last_sign_in_at')
-        .order('created_at', { ascending: false })
+        .from('profiles')
+        .select('id, email, raw_user_meta_data, updated_at, last_sign_in_at')
+        .order('updated_at', { ascending: false })
 
       if (error) throw error
       
@@ -32,8 +32,7 @@ export const useAuthUsersStore = defineStore('authUsers', () => {
               user.raw_user_meta_data?.full_name || 
               user.email.split('@')[0], // Fallback to first part of email
         avatar_url: user.raw_user_meta_data?.avatar_url,
-        created_at: user.created_at,
-        last_sign_in_at: user.last_sign_in_at,
+        updated_at: user.updated_at,
         // Add any additional fields you need
         is_admin: user.raw_user_meta_data?.is_admin || false
       }))

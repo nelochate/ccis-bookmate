@@ -54,9 +54,8 @@ function handleRefresh() {
 <template>
   <div>
     <div class="d-flex justify-end mb-4">
-      <v-btn color="primary" @click="openBookingDialog(null)" class="mr-2">
-        <v-icon start>mdi-plus</v-icon>
-        New Booking
+      <v-btn  color="primary" @click="openBookingDialog(null)" class="mr-2">
+        <v-icon  start>mdi-plus</v-icon>
       </v-btn>
       <v-btn @click="handleRefresh" :loading="loading">
         <v-icon>mdi-refresh</v-icon>
