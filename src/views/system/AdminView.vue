@@ -60,10 +60,10 @@ async function fetchAllBookings() {
     const { data: bookingsData, error: bookingsError } = await supabase
       .from('bookings')
       .select(`
-        id, purpose, booking_date, start_time, end_time, status, notes, 
+        id, purpose, date, start_time, end_time, status, notes, 
         facilities (id, name), user_id
       `)
-      .order('booking_date', { ascending: true })
+      .order('date', { ascending: true })
 
     if (bookingsError) throw bookingsError
 
@@ -88,7 +88,7 @@ async function fetchAllBookings() {
         userId: booking.user_id,
         userName: user.username || user.full_name || user.email.split('@')[0], // Fallback chain
         userEmail: user.email,
-        date: booking.booking_date,
+        date: booking.date,
         time: `${booking.start_time} - ${booking.end_time}`,
         purpose: booking.purpose,
         status: booking.status,

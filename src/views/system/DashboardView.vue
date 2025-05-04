@@ -1,64 +1,19 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import { supabase } from '@/utils/supabase'
 
 import FacilitiesTab from '@/components/system/FacilitiesTab.vue'
 import BookingsTab from '@/components/system/BookingsTab.vue'
 import SchedulesTab from '@/components/system/SchedulesTab.vue'
-
 import BookingsFormDialog from '@/components/system/BookingsFormDialog.vue'
 
 const theme = ref(localStorage.getItem('theme') ?? 'light')
 const tab = ref('facilities')
-
-// Add these new refs for dialog control
+const loading = ref(false)
 const showBookingDialog = ref(false)
 const selectedFacility = ref(null)
-
-  // Clean up on unmount
-  onUnmounted(() => {
-    supabase.removeChannel(facilitiesChannel)
-    supabase.removeChannel(bookingsChannel)
-  })
-
-// Add this function to handle opening the dialog
-function openBookingDialog(facility) {
-  selectedFacility.value = facility
-  showBookingDialog.value = true
-}
-
-// Add this function to handle booking submission
-async function handleSubmitBooking(bookingData) {
-  try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) throw new Error('User not authenticated')
-
-    const { error } = await supabase.from('bookings').insert({
-      facility_id: bookingData.facility,
-      user_id: user.id,
-      purpose: bookingData.purpose,
-      booking_date: bookingData.date,
-      start_time: bookingData.startTime,
-      end_time: bookingData.endTime,
-      notes: bookingData.notes,
-      status: 'pending',
-    })
-
-    if (error) throw error
-
-    // Refresh data
-    await fetchUserBookings()
-    await fetchFacilities()
-    
-    showBookingDialog.value = false
-  } catch (error) {
-    console.error('Error submitting booking:', error.message)
-  }
-}
-
+const error = ref(null)
 
 // Data refs
 const quickStats = ref([
@@ -72,30 +27,37 @@ const facilities = ref([])
 const userBookings = ref([])
 const computerLabs = ref([])
 const lectureRooms = ref([])
-
-// Add these refs
 const loadingFacilities = ref(false)
 const loadingBookings = ref(false)
-const error = ref(null)
-const user = ref(null)
 
-// Fetch data from Supabase
+// Load data on component mount
+onMounted(async () => {
+  await refreshAllData()
+})
+
+async function refreshAllData() {
+  try {
+    loading.value = true
+    await Promise.all([fetchFacilities(), fetchUserBookings()])
+  } catch (err) {
+    error.value = err.message
+  } finally {
+    loading.value = false
+  }
+}
+
 async function fetchFacilities() {
   try {
     loadingFacilities.value = true
     const { data, error: fetchError } = await supabase.from('facilities').select('*')
-
     if (fetchError) throw fetchError
 
     facilities.value = data
-    updateQuickStats()
-
-    // Populate computer labs and lecture rooms for schedules
     computerLabs.value = data.filter((f) => f.type === 'computer_lab')
     lectureRooms.value = data.filter((f) => f.type === 'lecture_room')
+    updateQuickStats()
   } catch (err) {
     error.value = err.message
-    console.error('Error fetching facilities:', err.message)
   } finally {
     loadingFacilities.value = false
   }
@@ -104,132 +66,150 @@ async function fetchFacilities() {
 async function fetchUserBookings() {
   try {
     loadingBookings.value = true
-    const {
-      data: { user: authUser },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError) throw authError
-    if (!authUser) return
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
 
     const { data, error: bookingsError } = await supabase
       .from('bookings')
-      .select(
-        `
+      .select(`
         id,
         purpose,
-        booking_date,
+        date,
         start_time,
         end_time,
         status,
         notes,
         facilities (id, name)
-      `,
-      )
-      .eq('user_id', authUser.id)
-      .order('booking_date', { ascending: true })
+      `)
+      .eq('user_id', user.id)
+      .order('date', { ascending: true })
 
     if (bookingsError) throw bookingsError
 
-    userBookings.value = data.map((booking) => ({
+    userBookings.value = data.map(booking => ({
       id: booking.id,
-      facilityId: booking.facilities.id,
-      facilityName: booking.facilities.name,
-      date: booking.booking_date,
+      facilityId: booking.facilities?.id,
+      facilityName: booking.facilities?.name || 'Unknown',
+      date: booking.date,
       time: `${booking.start_time} - ${booking.end_time}`,
       purpose: booking.purpose,
       status: booking.status,
-      notes: booking.notes,
+      notes: booking.notes
     }))
 
     updateQuickStats()
   } catch (err) {
     error.value = err.message
-    console.error('Error fetching user bookings:', err.message)
   } finally {
     loadingBookings.value = false
   }
 }
 
 function updateQuickStats() {
-  quickStats.value[0].value = facilities.value.length.toString()
-  quickStats.value[1].value = facilities.value.filter((f) => f.is_available).length.toString()
-  quickStats.value[2].value = userBookings.value.length.toString()
-  quickStats.value[3].value = userBookings.value
-    .filter((b) => b.status === 'pending')
-    .length.toString()
+  quickStats.value[0].value = facilities.value?.length.toString() || '0'
+  quickStats.value[1].value = facilities.value?.filter(f => f.is_available).length.toString() || '0'
+  quickStats.value[2].value = userBookings.value?.length.toString() || '0'
+  quickStats.value[3].value = userBookings.value?.filter(b => b.status === 'pending').length.toString() || '0'
+}
+
+async function handleSubmitBooking(bookingData) {
+  try {
+    loading.value = true
+    error.value = null
+
+    // Validate booking data
+    const requiredFields = ['facility_id', 'date', 'start_time', 'end_time']
+    const missingFields = requiredFields.filter(field => !bookingData[field])
+    if (missingFields.length > 0) throw new Error(`Missing fields: ${missingFields.join(', ')}`)
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
+    // Check for conflicts
+    const { data: conflicts } = await supabase
+      .from('bookings')
+      .select()
+      .eq('facility_id', bookingData.facility_id)
+      .eq('date', bookingData.date)
+      .or(`and(start_time.lte.${bookingData.end_time},end_time.gte.${bookingData.start_time})`)
+      .neq('id', bookingData.id || '')
+
+    if (conflicts?.length > 0) {
+      throw new Error('Time slot already booked')
+    }
+
+    // Save booking
+    const { data, error: dbError } = await supabase
+      .from('bookings')
+      .upsert({
+        ...bookingData,
+        user_id: user.id,
+        status: bookingData.status || 'pending'
+      })
+      .select()
+
+    if (dbError) throw dbError
+
+    await refreshAllData()
+    showBookingDialog.value = false
+    return { success: true, booking: data[0] }
+  } catch (err) {
+    error.value = err.message
+    return { success: false }
+  } finally {
+    loading.value = false
+  }
 }
 
 async function cancelBooking(booking) {
   try {
-    const { error: deleteError } = await supabase.from('bookings').delete().eq('id', booking.id)
+    loading.value = true
+    const { error: deleteError } = await supabase
+      .from('bookings')
+      .delete()
+      .eq('id', booking.id)
 
     if (deleteError) throw deleteError
-
-    // Refresh data
-    await fetchUserBookings()
-    await fetchFacilities()
+    await refreshAllData()
   } catch (err) {
     error.value = err.message
-    console.error('Error canceling booking:', err.message)
+  } finally {
+    loading.value = false
   }
 }
 
-async function fetchUser() {
-  try {
-    const {
-      data: { user: userData },
-      error: userError,
-    } = await supabase.auth.getUser()
-
-    if (userError) throw userError
-    user.value = userData
-  } catch (err) {
-    error.value = err.message
-    console.error('Error fetching user:', err.message)
-  }
+function openBookingDialog(facility) {
+  selectedFacility.value = facility
+  showBookingDialog.value = true
 }
-
-async function handleLogout() {
-  try {
-    const { error: logoutError } = await supabase.auth.signOut()
-    if (logoutError) throw logoutError
-    router.push({ name: 'login' })
-  } catch (err) {
-    error.value = err.message
-    console.error('Error logging out:', err.message)
-  }
-}
-
-
 </script>
 
 <template>
   <AppLayout>
     <template #content>
       <v-container fluid>
-        <!-- Header Section -->
         <v-row class="mb-6 d-flex justify-center align-center">
           <v-col cols="12">
-            <v-card
-              class="pa-4"
-              :color="theme === 'light' ? 'blue-grey-lighten-4' : 'blue-grey-darken-4'"
-            >
+            <v-card :color="theme === 'light' ? 'blue-grey-lighten-4' : 'blue-grey-darken-4'" class="pa-4">
               <div class="d-flex justify-space-between align-center">
                 <div>
                   <h1 class="text-h4 font-weight-bold">CCIS BookMate Dashboard</h1>
-                  <p class="text-subtitle-1">Manage your facility bookings and schedules</p>
+                  <p class="text-subtitle-1">Manage your facility bookings</p>
                 </div>
-                <v-btn color="primary" @click="openBookingDialog(null)">
-                  <v-icon start>mdi-plus</v-icon>
-                  New Booking
-                </v-btn>
+                <div>
+                  <v-btn color="primary" @click="openBookingDialog(null)" class="mr-2">
+                    <v-icon start>mdi-plus</v-icon>
+                    New Booking
+                  </v-btn>
+                  <v-btn @click="refreshAllData" icon>
+                    <v-icon>mdi-refresh</v-icon>
+                  </v-btn>
+                </div>
               </div>
             </v-card>
           </v-col>
         </v-row>
 
-        <!-- Quick Stats -->
         <v-row class="mb-6">
           <v-col v-for="stat in quickStats" :key="stat.title" cols="12" sm="6" md="3">
             <v-card>
@@ -244,36 +224,33 @@ async function handleLogout() {
           </v-col>
         </v-row>
 
-        <!-- Tabs for Different Views -->
         <v-tabs v-model="tab" grow>
           <v-tab value="facilities">Facilities</v-tab>
           <v-tab value="bookings">My Bookings</v-tab>
-          <v-tab value="schedules">Class Schedules</v-tab>
+          <v-tab value="schedules">Schedules</v-tab>
         </v-tabs>
 
         <v-window v-model="tab">
-          <!-- Facilities Tab -->
           <v-window-item value="facilities">
             <FacilitiesTab :facilities="facilities" :error="error" :loading="loadingFacilities" />
           </v-window-item>
 
-          <!-- My Bookings Tab -->
           <v-window-item value="bookings">
             <BookingsTab
               :user-bookings="userBookings"
+              :facilities="facilities"
+              :loading="loadingBookings"
               @cancel-booking="cancelBooking"
               @refresh-bookings="fetchUserBookings"
             />
           </v-window-item>
 
-          <!-- Class Schedules Tab -->
           <v-window-item value="schedules">
             <SchedulesTab :computer-labs="computerLabs" :lecture-rooms="lectureRooms" />
           </v-window-item>
         </v-window>
       </v-container>
       
-      <!-- Booking Form Dialog -->
       <BookingsFormDialog
         v-if="showBookingDialog"
         :facility="selectedFacility"
@@ -281,7 +258,6 @@ async function handleLogout() {
         @submit-success="handleSubmitBooking"
         @close="showBookingDialog = false"
       />
-
     </template>
   </AppLayout>
 </template>
