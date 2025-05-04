@@ -8,6 +8,7 @@ import AdminUsersTab from '@/components/system/admin-tabs/AdminUsersTab.vue'
 
 const theme = ref(localStorage.getItem('theme') ?? 'light')
 const tab = ref('facilities')
+const channels = ref([])
 
 // Data refs
 const quickStats = ref([
@@ -23,13 +24,20 @@ const users = ref([])
 const loading = ref({
   facilities: false,
   bookings: false,
-  users: false
+  users: false,
 })
 const error = ref(null)
+const successMessage = ref(null)
+
+// Computed properties
+const globalLoading = computed(() => 
+  loading.value.facilities || loading.value.bookings || loading.value.users
+)
 
 // Fetch data from Supabase
 async function fetchFacilities() {
   try {
+    error.value = null
     loading.value.facilities = true
     const { data, error: fetchError } = await supabase.from('facilities').select('*')
     if (fetchError) throw fetchError
@@ -37,6 +45,7 @@ async function fetchFacilities() {
     updateQuickStats()
   } catch (err) {
     error.value = `Error fetching facilities: ${err.message}`
+    throw err
   } finally {
     loading.value.facilities = false
   }
@@ -45,31 +54,39 @@ async function fetchFacilities() {
 async function fetchAllBookings() {
   try {
     loading.value.bookings = true
-    const { data, error: fetchError } = await supabase
+    error.value = null
+    
+    // 1. Fetch bookings with facility info
+    const { data: bookingsData, error: bookingsError } = await supabase
       .from('bookings')
-      .select(`id, purpose, booking_date, start_time, end_time, status, notes, 
-               facilities (id, name), user_id`)
+      .select(`
+        id, purpose, booking_date, start_time, end_time, status, notes, 
+        facilities (id, name), user_id
+      `)
       .order('booking_date', { ascending: true })
 
-    if (fetchError) throw fetchError
+    if (bookingsError) throw bookingsError
 
-    // Get user data for all bookings in one query
-    const userIds = data.map(booking => booking.user_id)
-    const { data: userData } = await supabase
-      .from('user_profiles')
-      .select('id, email, raw_user_meta_data')
+    // 2. Get unique user IDs from bookings
+    const userIds = [...new Set(bookingsData.map(booking => booking.user_id))]
+
+    // 3. Fetch user data in a single query
+    const { data: userData, error: userError } = await supabase
+      .from('profiles')
+      .select('id, email, username, full_name') // Use actual columns you have
       .in('id', userIds)
 
-    allBookings.value = data.map(booking => {
+    if (userError) throw userError
+
+    // 4. Map bookings with user info
+    allBookings.value = bookingsData.map(booking => {
       const user = userData?.find(u => u.id === booking.user_id) || {}
       return {
         id: booking.id,
         facilityId: booking.facilities?.id,
         facilityName: booking.facilities?.name,
         userId: booking.user_id,
-        userName: user.raw_user_meta_data?.name || 
-                 user.raw_user_meta_data?.full_name || 
-                 user.email,
+        userName: user.username || user.full_name || user.email.split('@')[0], // Fallback chain
         userEmail: user.email,
         date: booking.booking_date,
         time: `${booking.start_time} - ${booking.end_time}`,
@@ -82,6 +99,7 @@ async function fetchAllBookings() {
     updateQuickStats()
   } catch (err) {
     error.value = `Error fetching bookings: ${err.message}`
+    console.error('Booking fetch error:', err)
   } finally {
     loading.value.bookings = false
   }
@@ -90,76 +108,160 @@ async function fetchAllBookings() {
 async function fetchUsers() {
   try {
     loading.value.users = true;
-    
-    // Query the user_profiles view
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .select('id, email, name, created_at, last_sign_in_at, avatar_url');
-    
-    if (error) throw error;
-    
+    error.value = null;
+
+    // Query only columns that actually exist
+    const { data, error: fetchError } = await supabase
+      .from('profiles')
+      .select('id, email, username, full_name, avatar_url');
+
+    if (fetchError) throw fetchError;
+
     users.value = data.map(user => ({
       id: user.id,
       email: user.email,
-      name: user.name || user.email.split('@')[0], // Fallback
+      // Use whatever naming fields you have available
+      name: user.full_name || user.username || user.email.split('@')[0],
       createdAt: user.created_at,
       lastSignIn: user.last_sign_in_at,
-      avatar: user.avatar_url  // Optional
+      avatar: user.avatar_url
     }));
-    
+
   } catch (err) {
     error.value = `Error fetching users: ${err.message}`;
+    console.error('User fetch error:', err);
   } finally {
     loading.value.users = false;
   }
 }
-
 function updateQuickStats() {
   quickStats.value[0].value = facilities.value.length.toString()
-  quickStats.value[1].value = facilities.value.filter(f => f.is_available).length.toString()
+  quickStats.value[1].value = facilities.value.filter((f) => f.is_available).length.toString()
   quickStats.value[2].value = allBookings.value.length.toString()
-  quickStats.value[3].value = allBookings.value.filter(b => b.status === 'pending').length.toString()
+  quickStats.value[3].value = allBookings.value
+    .filter((b) => b.status === 'pending')
+    .length.toString()
 }
 
-// Handle booking status updates from child component
 async function handleBookingStatusUpdate({ id, status }) {
   try {
-    const { error } = await supabase
+    error.value = null
+    const { error: updateError } = await supabase
       .from('bookings')
       .update({ status })
       .eq('id', id)
 
-    if (error) throw error
+    if (updateError) throw updateError
+    successMessage.value = 'Booking status updated successfully'
     await fetchAllBookings()
   } catch (err) {
     error.value = `Error updating booking: ${err.message}`
+    throw err
   }
+}
+
+async function saveFacility(facilityData) {
+  try {
+    if (!facilityData.name) {
+      throw new Error('Facility name is required')
+    }
+
+    error.value = null
+    loading.value.facilities = true
+
+    let result
+    if (facilityData.id) {
+      const { data, error: updateError } = await supabase
+        .from('facilities')
+        .update(facilityData)
+        .eq('id', facilityData.id)
+        .select()
+
+      if (updateError) throw updateError
+      result = data[0]
+      successMessage.value = 'Facility updated successfully'
+    } else {
+      const { data, error: insertError } = await supabase
+        .from('facilities')
+        .insert(facilityData)
+        .select()
+
+      if (insertError) throw insertError
+      result = data[0]
+      successMessage.value = 'Facility created successfully'
+    }
+
+    await fetchFacilities()
+    return result
+  } catch (err) {
+    error.value = `Error saving facility: ${err.message}`
+    throw err
+  } finally {
+    loading.value.facilities = false
+  }
+}
+
+async function deleteFacility(facilityId) {
+  try {
+    error.value = null
+    loading.value.facilities = true
+    const { error: deleteError } = await supabase
+      .from('facilities')
+      .delete()
+      .eq('id', facilityId)
+
+    if (deleteError) throw deleteError
+    successMessage.value = 'Facility deleted successfully'
+    await fetchFacilities()
+  } catch (err) {
+    error.value = `Error deleting facility: ${err.message}`
+    throw err
+  } finally {
+    loading.value.facilities = false
+  }
+}
+
+function clearMessages() {
+  error.value = null
+  successMessage.value = null
 }
 
 // Initialize
 onMounted(async () => {
-  await fetchFacilities()
-  await fetchAllBookings()
-  await fetchUsers()
+  try {
+    await Promise.all([
+      fetchFacilities(),
+      fetchAllBookings(),
+      fetchUsers()
+    ])
 
-  // Set up real-time subscriptions
-  const facilitiesChannel = supabase
-    .channel('admin_facilities_changes')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'facilities' }, fetchFacilities)
-    .subscribe()
+    const facilitiesChannel = supabase
+      .channel('admin_facilities_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'facilities' }, () => {
+        fetchFacilities()
+      })
+      .subscribe((status, err) => {
+        if (err) error.value = `Facilities subscription error: ${err.message}`
+      })
 
-  const bookingsChannel = supabase
-    .channel('admin_bookings_changes')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, fetchAllBookings)
-    .subscribe()
+    const bookingsChannel = supabase
+      .channel('admin_bookings_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => {
+        fetchAllBookings()
+      })
+      .subscribe((status, err) => {
+        if (err) error.value = `Bookings subscription error: ${err.message}`
+      })
 
-  // Note: Can't subscribe directly to auth.users changes - need to use auth channel
-  // or create a function that calls fetchUsers when auth changes
+    channels.value = [facilitiesChannel, bookingsChannel]
+  } catch (err) {
+    error.value = `Initialization error: ${err.message}`
+  }
+})
 
-  // Clean up on unmount
-  onUnmounted(() => {
-    supabase.removeChannel(facilitiesChannel)
-    supabase.removeChannel(bookingsChannel)
+onUnmounted(() => {
+  channels.value.forEach(channel => {
+    if (channel) supabase.removeChannel(channel)
   })
 })
 </script>
@@ -168,6 +270,28 @@ onMounted(async () => {
   <AppLayout>
     <template #content>
       <v-container fluid>
+        <!-- Messages Section -->
+        <v-row v-if="error || successMessage">
+          <v-col cols="12">
+            <v-alert
+              v-if="error"
+              type="error"
+              dismissible
+              @click:close="clearMessages"
+            >
+              {{ error }}
+            </v-alert>
+            <v-alert
+              v-if="successMessage"
+              type="success"
+              dismissible
+              @click:close="clearMessages"
+            >
+              {{ successMessage }}
+            </v-alert>
+          </v-col>
+        </v-row>
+
         <!-- Header Section -->
         <v-row class="mb-4 mb-sm-6">
           <v-col cols="12">
@@ -175,13 +299,22 @@ onMounted(async () => {
               class="pa-3 pa-sm-4"
               :color="theme === 'light' ? 'blue-grey-lighten-4' : 'blue-grey-darken-4'"
             >
-              <div class="d-flex flex-column flex-sm-row justify-space-between align-center align-sm-start">
+              <div
+                class="d-flex flex-column flex-sm-row justify-space-between align-center align-sm-start"
+              >
                 <div class="text-center text-sm-left mb-2 mb-sm-0">
                   <h1 class="text-h5 text-sm-h4 font-weight-bold">CCIS BookMate Admin Dashboard</h1>
                   <p class="text-subtitle-2 text-sm-subtitle-1 mt-1">
                     Manage facilities, bookings, and users
                   </p>
                 </div>
+                <v-progress-circular
+                  v-if="globalLoading"
+                  indeterminate
+                  color="primary"
+                  size="24"
+                  width="3"
+                />
               </div>
             </v-card>
           </v-col>
@@ -234,10 +367,11 @@ onMounted(async () => {
 
           <!-- Users Tab -->
           <v-window-item value="users">
-            <AdminUsersTab
-              :users="users"
-              :loading="loading.users"
+            <AdminUsersTab 
+              :users="users" 
+              :loading="loading.users" 
               :error="error"
+              @refresh="fetchUsers"
             />
           </v-window-item>
         </v-window>
@@ -245,3 +379,9 @@ onMounted(async () => {
     </template>
   </AppLayout>
 </template>
+
+<style scoped>
+.v-progress-circular {
+  margin-left: auto;
+}
+</style>
