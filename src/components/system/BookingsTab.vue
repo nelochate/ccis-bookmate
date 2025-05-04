@@ -6,16 +6,16 @@ import BookingsFormDialog from '@/components/system/BookingsFormDialog.vue'
 const props = defineProps({
   userBookings: {
     type: Array,
-    required: true
+    required: true,
   },
   facilities: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
   loading: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 })
 
 const emit = defineEmits(['cancel-booking', 'refresh-bookings'])
@@ -26,20 +26,24 @@ const bookingHeaders = [
   { title: 'Time', key: 'time' },
   { title: 'Purpose', key: 'purpose' },
   { title: 'Status', key: 'status' },
-  { title: 'Actions', key: 'actions', sortable: false }
+  { title: 'Actions', key: 'actions', sortable: false },
 ]
 
 const showBookingDialog = ref(false)
 const selectedFacility = ref(null)
 const isSubmitting = ref(false)
 const bookingError = ref(null)
+const confirmationDialog = ref(false)
+const bookingToCancel = ref(null)
+const viewBookingDialog = ref(false)
+const selectedBooking = ref(null)
 
 function getStatusColor(status) {
   const colors = {
     pending: 'orange',
     approved: 'green',
     rejected: 'red',
-    cancelled: 'grey'
+    cancelled: 'grey',
   }
   return colors[status.toLowerCase()] || 'blue'
 }
@@ -49,8 +53,39 @@ function openBookingDialog(facility) {
   showBookingDialog.value = true
 }
 
+function openViewBookingDialog(booking) {
+  selectedBooking.value = booking
+  viewBookingDialog.value = true
+}
+
 function handleRefresh() {
   emit('refresh-bookings')
+}
+
+function confirmCancellation(booking) {
+  bookingToCancel.value = booking
+  confirmationDialog.value = true
+}
+
+function cancelBooking() {
+  if (!bookingToCancel.value) return
+
+  // Update the booking status to "cancelled" in the database
+  supabase
+    .from('bookings')
+    .update({ status: 'cancelled' })
+    .eq('id', bookingToCancel.value.id)
+    .then(({ error }) => {
+      if (error) {
+        bookingError.value = 'Failed to cancel the booking. Please try again.'
+      } else {
+        handleRefresh() // Refresh the bookings list
+        confirmationDialog.value = false // Close the confirmation dialog
+      }
+    })
+    .catch(() => {
+      bookingError.value = 'An unexpected error occurred while cancelling the booking.'
+    })
 }
 
 async function handleSubmitBooking(bookingData) {
@@ -58,7 +93,6 @@ async function handleSubmitBooking(bookingData) {
     isSubmitting.value = true
     bookingError.value = null
 
-    // Validate booking data
     const requiredFields = ['facility_id', 'date', 'start_time', 'end_time']
     const missingFields = requiredFields.filter((field) => !bookingData[field])
     if (missingFields.length > 0) {
@@ -70,7 +104,6 @@ async function handleSubmitBooking(bookingData) {
     } = await supabase.auth.getUser()
     if (!user) throw new Error('User not authenticated')
 
-    // Check for conflicts
     const { data: conflicts } = await supabase
       .from('bookings')
       .select()
@@ -83,14 +116,11 @@ async function handleSubmitBooking(bookingData) {
       throw new Error('Time slot already booked')
     }
 
-    // Save booking
-    const { error: dbError } = await supabase
-      .from('bookings')
-      .upsert({
-        ...bookingData,
-        user_id: user.id,
-        status: bookingData.status || 'pending',
-      })
+    const { error: dbError } = await supabase.from('bookings').upsert({
+      ...bookingData,
+      user_id: user.id,
+      status: bookingData.status || 'pending',
+    })
 
     if (dbError) throw dbError
 
@@ -110,8 +140,9 @@ async function handleSubmitBooking(bookingData) {
   <div>
     <div class="d-flex justify-end mb-4">
       <v-btn @click="openBookingDialog(null)" class="mr-4">
-        <v-icon>mdi-plus</v-icon></v-btn>
-      
+        <v-icon>mdi-plus</v-icon>
+      </v-btn>
+
       <v-btn @click="handleRefresh" :loading="loading">
         <v-icon>mdi-refresh</v-icon>
       </v-btn>
@@ -128,6 +159,8 @@ async function handleSubmitBooking(bookingData) {
         :loading="props.loading"
         :items-per-page="10"
         class="elevation-1"
+        dense
+        outlined
       >
         <template #item.status="{ item }">
           <v-chip :color="getStatusColor(item.status)" small>
@@ -138,15 +171,93 @@ async function handleSubmitBooking(bookingData) {
           <v-btn
             icon
             size="small"
-            color="error"
-            @click="emit('cancel-booking', item)"
+            color="gray"
+            @click.stop="openViewBookingDialog(item)"
+            @click="openViewBookingDialog(item)"
+          >
+            <v-icon>mdi-eye-outline</v-icon>
+          </v-btn>
+
+          <v-btn
+            v-if="item.status === 'pending' || item.status === 'approved'"
+            icon
+            size="small"
+            color="gray"
+            @click="confirmCancellation(item)"
             :disabled="props.loading"
           >
-            <v-icon>mdi-delete</v-icon>
+            <v-icon>mdi-cancel</v-icon>
           </v-btn>
         </template>
       </v-data-table>
     </v-card>
+
+    <!-- Confirmation Dialog -->
+    <v-dialog v-model="confirmationDialog" max-width="400">
+      <v-card>
+        <v-card-title>Cancel Booking</v-card-title>
+        <v-card-text> Are you sure you want to cancel this booking? </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn text @click="confirmationDialog = false">No</v-btn>
+          <v-btn color="red" @click="cancelBooking">Yes</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- View Booking Dialog -->
+    <v-dialog v-model="viewBookingDialog" max-width="500">
+      <v-card>
+        <v-card-title>Booking Details</v-card-title>
+        <v-card-text>
+          <v-list>
+            <v-list-item>
+              <template #prepend>
+                <v-icon>mdi-office-building</v-icon>
+              </template>
+              <v-list-item-title>{{ selectedBooking?.facilityName }}</v-list-item-title>
+              <v-list-item-subtitle>Facility</v-list-item-subtitle>
+            </v-list-item>
+
+            <v-list-item>
+              <template #prepend>
+                <v-icon>mdi-calendar</v-icon>
+              </template>
+              <v-list-item-title>{{ selectedBooking?.date }}</v-list-item-title>
+              <v-list-item-subtitle>Date</v-list-item-subtitle>
+            </v-list-item>
+
+            <v-list-item>
+              <template #prepend>
+                <v-icon>mdi-clock</v-icon>
+              </template>
+              <v-list-item-title>{{ selectedBooking?.time }}</v-list-item-title>
+              <v-list-item-subtitle>Time Slot</v-list-item-subtitle>
+            </v-list-item>
+
+            <v-list-item>
+              <template #prepend>
+                <v-icon>mdi-text</v-icon>
+              </template>
+              <v-list-item-title>{{ selectedBooking?.purpose }}</v-list-item-title>
+              <v-list-item-subtitle>Purpose</v-list-item-subtitle>
+            </v-list-item>
+
+            <v-list-item>
+              <template #prepend>
+                <v-icon>mdi-information-outline</v-icon>
+              </template>
+              <v-list-item-title>{{ selectedBooking?.status }}</v-list-item-title>
+              <v-list-item-subtitle>Status</v-list-item-subtitle>
+            </v-list-item>
+          </v-list>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn text @click="viewBookingDialog = false">Close</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <BookingsFormDialog
       v-if="showBookingDialog"
@@ -159,3 +270,14 @@ async function handleSubmitBooking(bookingData) {
     />
   </div>
 </template>
+
+<style scoped>
+.v-data-table {
+  border: 1.8px solid #ccc; /* Add a border around the table */
+}
+
+.v-data-table th,
+.v-data-table td {
+  border-bottom: 1.5px solid #ccc; /* Add borders between rows */
+}
+</style>

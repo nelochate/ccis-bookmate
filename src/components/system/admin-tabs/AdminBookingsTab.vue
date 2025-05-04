@@ -1,13 +1,13 @@
 <script setup>
-import { ref } from 'vue';
+import { ref } from 'vue'
 
 const props = defineProps({
   bookings: Array,
   loading: Boolean,
-  error: String
-});
+  error: String,
+})
 
-const emit = defineEmits(['update-booking-status']);
+const emit = defineEmits(['update-booking-status'])
 
 const headers = [
   { title: 'User', key: 'user', sortable: false },
@@ -16,11 +16,13 @@ const headers = [
   { title: 'Time', key: 'time', sortable: false },
   { title: 'Purpose', key: 'purpose', sortable: false },
   { title: 'Status', key: 'status', sortable: true },
-  { title: 'Actions', key: 'actions', sortable: false }
-];
+  { title: 'Actions', key: 'actions', sortable: false },
+]
 
-const approvalDialog = ref(false);
-const selectedBooking = ref(null);
+const approvalDialog = ref(false)
+const viewBookingDialog = ref(false)
+const selectedBooking = ref(null)
+const selectedApprovedBooking = ref(null)
 
 const getStatusColor = (status) => {
   const statusColors = {
@@ -28,47 +30,43 @@ const getStatusColor = (status) => {
     pending: 'warning',
     rejected: 'error',
     cancelled: 'grey',
-  };
-  return statusColors[status] || 'info';
-};
+  }
+  return statusColors[status] || 'info'
+}
 
 const openApprovalDialog = (booking) => {
-  selectedBooking.value = booking;
-  approvalDialog.value = true;
-};
+  selectedBooking.value = booking
+  approvalDialog.value = true
+}
+
+const openViewBookingDialog = (booking) => {
+  selectedApprovedBooking.value = booking
+  viewBookingDialog.value = true
+}
 
 const updateStatus = (status) => {
   emit('update-booking-status', {
     id: selectedBooking.value.id,
-    status
-  });
-  approvalDialog.value = false;
-};
+    status,
+  })
+  approvalDialog.value = false
+}
 
 const formatDate = (dateString) => {
-  const options = { year: 'numeric', month: 'short', day: 'numeric' };
-  return new Date(dateString).toLocaleDateString(undefined, options);
-};
+  const options = { year: 'numeric', month: 'short', day: 'numeric' }
+  return new Date(dateString).toLocaleDateString(undefined, options)
+}
 </script>
 
 <template>
   <div class="admin-bookings-tab">
     <!-- Error State -->
-    <v-alert
-      v-if="error"
-      type="error"
-      class="mb-4"
-    >
+    <v-alert v-if="error" type="error" class="mb-4">
       {{ error }}
     </v-alert>
 
     <!-- Loading State -->
-    <v-progress-linear
-      v-if="loading"
-      indeterminate
-      color="primary"
-      class="mb-4"
-    />
+    <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
 
     <!-- Bookings Table -->
     <v-data-table
@@ -76,7 +74,7 @@ const formatDate = (dateString) => {
       :items="bookings"
       :loading="loading"
       :items-per-page="10"
-      class="elevation-1"
+      class="elevation-1 table-with-border"
     >
       <template #item.user="{ item }">
         <div>
@@ -84,36 +82,62 @@ const formatDate = (dateString) => {
           <div class="text-caption text-grey">{{ item.userEmail }}</div>
         </div>
       </template>
-      
+
       <template #item.date="{ item }">
         {{ formatDate(item.date) }}
       </template>
-      
+
       <template #item.status="{ item }">
         <v-chip :color="getStatusColor(item.status)" size="small">
           {{ item.status }}
         </v-chip>
       </template>
-      
+
       <template #item.actions="{ item }">
         <div class="d-flex">
+          <!-- Approve Button -->
           <v-btn
             v-if="item.status === 'pending'"
             icon
             size="small"
-            color="primary"
+            color="green"
             class="mr-2"
             @click.stop="openApprovalDialog(item)"
           >
-            <v-icon>mdi-check</v-icon>
+            <v-icon>mdi-check-decagram-outline</v-icon>
           </v-btn>
+
+          <!-- View Approved Booking Button -->
           <v-btn
+            v-if="item.status === 'approved'"
             icon
             size="small"
-            color="error"
-            @click.stop="emit('update-booking-status', { id: item.id, status: 'cancelled' })"
+            color="green"
+            @click.stop="openViewBookingDialog(item)"
           >
-            <v-icon>mdi-close</v-icon>
+            <v-icon>mdi-eye-outline</v-icon>
+          </v-btn>
+
+          <!-- View Rejected Booking Button -->
+          <v-btn
+            v-if="item.status === 'rejected'"
+            icon
+            size="small"
+            color="red"
+            @click.stop="openViewBookingDialog(item)"
+          >
+            <v-icon>mdi-eye-outline</v-icon>
+          </v-btn>
+
+          <!-- View Cancelled Booking Button -->
+          <v-btn
+            v-if="item.status === 'cancelled'"
+            icon
+            size="small"
+            color="grey"
+            @click.stop="openViewBookingDialog(item)"
+          >
+            <v-icon>mdi-eye-outline</v-icon>
           </v-btn>
         </div>
       </template>
@@ -181,6 +205,68 @@ const formatDate = (dateString) => {
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- View Approved Booking Dialog -->
+    <v-dialog v-model="viewBookingDialog" max-width="500">
+      <v-card>
+        <v-card-title>Approved Booking Details</v-card-title>
+        <v-card-text>
+          <v-list>
+            <v-list-item>
+              <template #prepend>
+                <v-icon>mdi-office-building</v-icon>
+              </template>
+              <v-list-item-title>{{ selectedApprovedBooking?.facilityName }}</v-list-item-title>
+              <v-list-item-subtitle>Facility</v-list-item-subtitle>
+            </v-list-item>
+
+            <v-list-item>
+              <template #prepend>
+                <v-icon>mdi-account</v-icon>
+              </template>
+              <v-list-item-title>{{ selectedApprovedBooking?.userName }}</v-list-item-title>
+              <v-list-item-subtitle>{{ selectedApprovedBooking?.userEmail }}</v-list-item-subtitle>
+            </v-list-item>
+
+            <v-list-item>
+              <template #prepend>
+                <v-icon>mdi-calendar</v-icon>
+              </template>
+              <v-list-item-title>{{ formatDate(selectedApprovedBooking?.date) }}</v-list-item-title>
+              <v-list-item-subtitle>Date</v-list-item-subtitle>
+            </v-list-item>
+
+            <v-list-item>
+              <template #prepend>
+                <v-icon>mdi-clock</v-icon>
+              </template>
+              <v-list-item-title>{{ selectedApprovedBooking?.time }}</v-list-item-title>
+              <v-list-item-subtitle>Time Slot</v-list-item-subtitle>
+            </v-list-item>
+
+            <v-list-item v-if="selectedApprovedBooking?.purpose">
+              <template #prepend>
+                <v-icon>mdi-text</v-icon>
+              </template>
+              <v-list-item-title>{{ selectedApprovedBooking?.purpose }}</v-list-item-title>
+              <v-list-item-subtitle>Purpose</v-list-item-subtitle>
+            </v-list-item>
+
+            <v-list-item v-if="selectedApprovedBooking?.notes">
+              <template #prepend>
+                <v-icon>mdi-note</v-icon>
+              </template>
+              <v-list-item-title>{{ selectedApprovedBooking?.notes }}</v-list-item-title>
+              <v-list-item-subtitle>Notes</v-list-item-subtitle>
+            </v-list-item>
+          </v-list>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn text @click="viewBookingDialog = false">Close</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -191,5 +277,12 @@ const formatDate = (dateString) => {
 
 .v-btn + .v-btn {
   margin-left: 8px;
+}
+
+/* Add border styling for the table */
+.table-with-border {
+  border: 0.px solid #ccc;
+  border-radius: 7px;
+  overflow: hidden;
 }
 </style>

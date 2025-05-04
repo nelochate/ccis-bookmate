@@ -1,46 +1,46 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import { supabase } from '@/utils/supabase';
+import { ref, onMounted } from 'vue'
+import { supabase } from '@/utils/supabase'
 
 const props = defineProps({
   loading: Boolean,
-  error: String
-});
+  error: String,
+})
 
-const emit = defineEmits(['refresh']);
+const emit = defineEmits(['refresh'])
 
 // Local state
-const facilities = ref([]);
-const localLoading = ref(false);
-const localError = ref(null);
+const facilities = ref([])
+const localLoading = ref(false)
+const localError = ref(null)
 
 const headers = [
   { title: 'Name', key: 'name' },
   { title: 'Type', key: 'type' },
   { title: 'Capacity', key: 'capacity' },
   { title: 'Status', key: 'is_available' },
-  { title: 'Actions', key: 'actions', sortable: false }
-];
+  { title: 'Actions', key: 'actions', sortable: false },
+]
 
 const statusColors = {
   computer_lab: 'blue',
   lecture_room: 'green',
   meeting_room: 'orange',
   auditorium: 'purple',
-  conference_room: 'teal'
-};
+  conference_room: 'teal',
+}
 
-const getStatusText = (is_available) => is_available ? 'Available' : 'Occupied';
+const getStatusText = (is_available) => (is_available ? 'Available' : 'Occupied')
 
 const facilityTypes = ref([
   { text: 'Computer Lab', value: 'computer_lab' },
   { text: 'Lecture Room', value: 'lecture_room' },
   { text: 'Auditorium', value: 'auditorium' },
-  { text: 'Conference Room', value: 'conference_room' }
-]);
+  { text: 'Conference Room', value: 'conference_room' },
+])
 
 // Facility Dialog
-const facilityDialog = ref(false);
+const facilityDialog = ref(false)
 const facilityForm = ref({
   id: null,
   name: '',
@@ -48,8 +48,8 @@ const facilityForm = ref({
   capacity: null,
   location: '',
   is_available: true,
-  image_url: ''
-});
+  image_url: '',
+})
 
 // Reset form function
 const resetForm = () => {
@@ -60,53 +60,53 @@ const resetForm = () => {
     capacity: null,
     location: '',
     is_available: true,
-    image_url: ''
-  };
-};
+    image_url: '',
+  }
+}
 
 // Fetch facilities from Supabase
 const fetchFacilities = async () => {
   try {
-    localLoading.value = true;
+    localLoading.value = true
     const { data, error } = await supabase
       .from('facilities')
       .select('*')
-      .order('name', { ascending: true });
+      .order('name', { ascending: true })
 
-    if (error) throw error;
-    
-    facilities.value = data;
-    localError.value = null;
+    if (error) throw error
+
+    facilities.value = data
+    localError.value = null
   } catch (err) {
-    localError.value = `Error loading facilities: ${err.message}`;
-    console.error(err);
+    localError.value = `Error loading facilities: ${err.message}`
+    console.error(err)
   } finally {
-    localLoading.value = false;
+    localLoading.value = false
   }
-};
+}
 
 // Initialize by fetching facilities
 onMounted(() => {
-  fetchFacilities();
-});
+  fetchFacilities()
+})
 
 const openFacilityDialog = (facility = null) => {
   if (facility) {
     // Make sure capacity is a number
-    facilityForm.value = { 
+    facilityForm.value = {
       ...facility,
-      capacity: facility.capacity ? Number(facility.capacity) : null
-    };
+      capacity: facility.capacity ? Number(facility.capacity) : null,
+    }
   } else {
-    resetForm();
+    resetForm()
   }
-  facilityDialog.value = true;
-};
+  facilityDialog.value = true
+}
 
 const saveFacility = async () => {
   try {
-    localLoading.value = true;
-    
+    localLoading.value = true
+
     // Prepare the data to be saved
     const facilityData = {
       name: facilityForm.value.name,
@@ -114,8 +114,8 @@ const saveFacility = async () => {
       capacity: facilityForm.value.capacity ? Number(facilityForm.value.capacity) : null,
       location: facilityForm.value.location,
       is_available: facilityForm.value.is_available,
-      image_url: facilityForm.value.image_url
-    };
+      image_url: facilityForm.value.image_url,
+    }
 
     if (facilityForm.value.id) {
       // Update existing facility
@@ -123,66 +123,56 @@ const saveFacility = async () => {
         .from('facilities')
         .update({
           ...facilityData,
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
         })
         .eq('id', facilityForm.value.id)
-        .select();
-      
-      if (error) throw error;
+        .select()
+
+      if (error) throw error
     } else {
       // Create new facility
-      const { data, error } = await supabase
-        .from('facilities')
-        .insert(facilityData)
-        .select();
-      
-      if (error) throw error;
+      const { data, error } = await supabase.from('facilities').insert(facilityData).select()
+
+      if (error) throw error
     }
-    
-    facilityDialog.value = false;
-    await fetchFacilities();
-    localError.value = null;
-    emit('refresh');
+
+    facilityDialog.value = false
+    await fetchFacilities()
+    localError.value = null
+    emit('refresh')
   } catch (err) {
-    localError.value = `Error saving facility: ${err.message}`;
-    console.error(err);
+    localError.value = `Error saving facility: ${err.message}`
+    console.error(err)
   } finally {
-    localLoading.value = false;
+    localLoading.value = false
   }
-};
+}
 
 const deleteFacility = async (id) => {
-  if (!confirm('Are you sure you want to delete this facility?')) return;
-  
+  if (!confirm('Are you sure you want to delete this facility?')) return
+
   try {
-    localLoading.value = true;
-    const { error } = await supabase
-      .from('facilities')
-      .delete()
-      .eq('id', id);
-    
-    if (error) throw error;
-    
-    await fetchFacilities();
-    localError.value = null;
-    emit('refresh');
+    localLoading.value = true
+    const { error } = await supabase.from('facilities').delete().eq('id', id)
+
+    if (error) throw error
+
+    await fetchFacilities()
+    localError.value = null
+    emit('refresh')
   } catch (err) {
-    localError.value = `Error deleting facility: ${err.message}`;
-    console.error(err);
+    localError.value = `Error deleting facility: ${err.message}`
+    console.error(err)
   } finally {
-    localLoading.value = false;
+    localLoading.value = false
   }
-};
+}
 </script>
 
 <template>
   <div class="admin-facilities-tab">
     <!-- Error State -->
-    <v-alert
-      v-if="localError"
-      type="error"
-      class="mb-4"
-    >
+    <v-alert v-if="localError" type="error" class="mb-4 styled-alert">
       {{ localError }}
     </v-alert>
 
@@ -191,16 +181,12 @@ const deleteFacility = async (id) => {
       v-if="localLoading && !facilityDialog"
       indeterminate
       color="primary"
-      class="mb-4"
+      class="mb-4 styled-progress"
     />
 
     <!-- Action Bar -->
-    <div class="d-flex justify-space-between mb-4">
-      <v-btn
-        color="primary"
-        prepend-icon="mdi-plus"
-        @click="openFacilityDialog()"
-      >
+    <div class="action-bar">
+      <v-btn color="primary" prepend-icon="mdi-plus" @click="openFacilityDialog()">
         Add Facility
       </v-btn>
       <v-btn
@@ -217,7 +203,7 @@ const deleteFacility = async (id) => {
       :headers="headers"
       :items="facilities"
       :loading="localLoading"
-      class="elevation-1"
+      class="elevation-1 styled-table"
     >
       <template #item.type="{ item }">
         <v-chip :color="statusColors[item.type] || 'grey'">
@@ -232,40 +218,30 @@ const deleteFacility = async (id) => {
       </template>
 
       <template #item.actions="{ item }">
-        <v-btn
-          icon="none"
-          size="small"
-          class="mr-3"
-          @click.stop="openFacilityDialog(item)"
-        >
+        <v-btn icon="none" size="small" class="mr-3" @click.stop="openFacilityDialog(item)">
           <v-icon>mdi-pencil</v-icon>
         </v-btn>
-        <v-btn
-          icon
-          size="small"
-        
-          @click.stop="deleteFacility(item.id)"
-        >
+        <v-btn icon size="small" @click.stop="deleteFacility(item.id)">
           <v-icon>mdi-delete-outline</v-icon>
         </v-btn>
       </template>
     </v-data-table>
 
     <!-- Facility Management Dialog -->
-    <v-dialog v-model="facilityDialog" max-width="600" persistent>
+    <v-dialog v-model="facilityDialog" max-width="600" persistent class="styled-dialog">
       <v-card>
         <v-card-title>
           {{ facilityForm.id ? 'Edit Facility' : 'Add New Facility' }}
         </v-card-title>
         <v-card-text>
           <v-form @submit.prevent="saveFacility">
-            <v-text-field 
-              v-model="facilityForm.name" 
-              label="Name" 
+            <v-text-field
+              v-model="facilityForm.name"
+              label="Name"
               required
-              :rules="[v => !!v || 'Name is required']"
+              :rules="[(v) => !!v || 'Name is required']"
             ></v-text-field>
-            
+
             <v-select
               v-model="facilityForm.type"
               :items="facilityTypes"
@@ -273,48 +249,53 @@ const deleteFacility = async (id) => {
               item-title="text"
               item-value="value"
               required
-              :rules="[v => !!v || 'Type is required']"
+              :rules="[(v) => !!v || 'Type is required']"
             >
               <template v-slot:item="{ props, item }">
                 <v-list-item v-bind="props">
                   <template v-slot:prepend>
                     <v-icon :color="statusColors[item.raw.value]">
-                      {{ item.raw.value === 'computer_lab' ? 'mdi-desktop-classic' : 
-                         item.raw.value === 'lecture_room' ? 'mdi-school' :
-                         item.raw.value === 'conference_room' ? 'mdi-account-group' :
-                         'mdi-door' }}
+                      {{
+                        item.raw.value === 'computer_lab'
+                          ? 'mdi-desktop-classic'
+                          : item.raw.value === 'lecture_room'
+                            ? 'mdi-school'
+                            : item.raw.value === 'conference_room'
+                              ? 'mdi-account-group'
+                              : 'mdi-door'
+                      }}
                     </v-icon>
                   </template>
                 </v-list-item>
               </template>
             </v-select>
-            
+
             <v-text-field
               v-model.number="facilityForm.capacity"
               label="Capacity"
               type="number"
               required
               :rules="[
-                v => v !== null && v !== '' || 'Capacity is required',
-                v => v > 0 || 'Capacity must be positive'
+                (v) => (v !== null && v !== '') || 'Capacity is required',
+                (v) => v > 0 || 'Capacity must be positive',
               ]"
             ></v-text-field>
-            
+
             <v-text-field
               v-model="facilityForm.location"
               label="Location"
               required
-              :rules="[v => !!v || 'Location is required']"
+              :rules="[(v) => !!v || 'Location is required']"
             ></v-text-field>
-            
-            <v-switch 
-              v-model="facilityForm.is_available" 
+
+            <v-switch
+              v-model="facilityForm.is_available"
               label="Available"
               color="primary"
             ></v-switch>
-            
-            <v-text-field 
-              v-model="facilityForm.image_url" 
+
+            <v-text-field
+              v-model="facilityForm.image_url"
               label="Image URL"
               placeholder="https://example.com/image.jpg"
             ></v-text-field>
@@ -322,13 +303,10 @@ const deleteFacility = async (id) => {
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="error" @click="facilityDialog = false" :disabled="localLoading">Cancel</v-btn>
-          <v-btn 
-            color="primary" 
-            @click="saveFacility"
-            :loading="localLoading"
-            type="submit"
+          <v-btn color="error" @click="facilityDialog = false" :disabled="localLoading"
+            >Cancel</v-btn
           >
+          <v-btn color="primary" @click="saveFacility" :loading="localLoading" type="submit">
             Save
           </v-btn>
         </v-card-actions>
@@ -342,5 +320,53 @@ const deleteFacility = async (id) => {
   padding: 16px;
   background-color: var(--v-background-base);
   border-radius: 5px;
+}
+
+.styled-alert {
+  border: 1px solid var(--v-error-base);
+  border-radius: 4px;
+}
+
+.styled-progress {
+  border: 1px solid var(--v-primary-base);
+  border-radius: 4px;
+}
+
+.action-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--v-background-secondary);
+  padding: 12px;
+  border-radius: 4px;
+  border: 1px solid var(--v-border-light);
+}
+
+.styled-table {
+  border: 1px solid var(--v-border-light);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.styled-table ::v-deep(.v-data-table__wrapper) {
+  border-top: 1px solid var(--v-border-light);
+}
+
+.styled-table ::v-deep(.v-data-table__th) {
+  border-bottom: 1px solid var(--v-border-light);
+  background-color: var(--v-background-secondary);
+}
+
+.styled-table ::v-deep(.v-data-table__td) {
+  border-bottom: 1px solid var(--v-border-light);
+}
+
+.styled-table ::v-deep(.v-data-table__tr:hover) {
+  background-color: var(--v-background-hover);
+}
+
+.styled-dialog {
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
 }
 </style>
