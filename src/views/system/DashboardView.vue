@@ -14,6 +14,7 @@ const loading = ref(false)
 const showBookingDialog = ref(false)
 const selectedFacility = ref(null)
 const error = ref(null)
+const userFirstName = ref('') // Store the user's first name
 
 // Data refs
 const quickStats = ref([
@@ -32,8 +33,23 @@ const loadingBookings = ref(false)
 
 // Load data on component mount
 onMounted(async () => {
+  await fetchUserFirstName() // Fetch the user's first name
   await refreshAllData()
 })
+
+// Fetch the user's first name
+async function fetchUserFirstName() {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (user) {
+      userFirstName.value = user.user_metadata?.firstName || 'User' // Default to 'User' if first name is not available
+    }
+  } catch (err) {
+    console.error('Error fetching user first name:', err)
+  }
+}
 
 async function refreshAllData() {
   try {
@@ -204,7 +220,7 @@ function openBookingDialog(facility) {
             >
               <v-row class="d-flex justify-space-between align-center">
                 <v-col class="d-flex flex-column justify-center">
-                  <h1 class="text-h4 font-weight-bold mb-1">Welcome To Your Dashboard</h1>
+                  <h1 class="text-h4 font-weight-bold mb-1">Welcome, {{ userFirstName }}!</h1>
                   <p class="text-subtitle-1 mb-0">Manage your facility bookings</p>
                 </v-col>
                 <v-col class="d-flex justify-end align-center" cols="auto">
@@ -293,11 +309,11 @@ function openBookingDialog(facility) {
 
 <style scoped>
 .header-stats {
-  background-image: url('/img/hiraya-blurred.png'); 
+  background-image: url('/img/hiraya-blurred.png');
   background-size: cover;
   background-position: center;
-  padding: 20px; 
-  border-radius: 8px; 
+  padding: 20px;
+  border-radius: 8px;
 }
 
 .header-card {
@@ -316,8 +332,8 @@ function openBookingDialog(facility) {
   cursor: pointer;
   transform: translateY(0);
   box-shadow: 10px 4px 6px rgba(0, 0, 0, 0.1);
-  border: 2px solid #14161731; 
-  border-radius: 8px; 
+  border: 2px solid #14161731;
+  border-radius: 8px;
   opacity: 0.9;
 }
 
