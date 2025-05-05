@@ -49,7 +49,7 @@ const deleteAccount = async () => {
             prepend-icon="mdi-arrow-left"
             class="mr-4"
           ></v-btn>
-          <h1 class="text-h4 font-weight-bold">Account Settings</h1>
+          <h3 class="text-h4 font-weight-bold">Account Settings</h3>
         </div>
 
         <!-- Error Alert -->

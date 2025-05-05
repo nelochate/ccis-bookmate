@@ -153,41 +153,108 @@ const formatDate = (dateString) => {
             <v-icon>mdi-check-decagram-outline</v-icon>
           </v-btn>
 
-          <!-- View Approved Booking Button -->
-          <v-btn
-            v-if="item.status === 'approved'"
-            icon
-            size="small"
-            color="green"
-            @click.stop="openViewBookingDialog(item)"
-          >
-            <v-icon>mdi-eye-outline</v-icon>
-          </v-btn>
-
-          <!-- View Rejected Booking Button -->
-          <v-btn
-            v-if="item.status === 'rejected'"
-            icon
-            size="small"
-            color="red"
-            @click.stop="openViewBookingDialog(item)"
-          >
-            <v-icon>mdi-eye-outline</v-icon>
-          </v-btn>
-
-          <!-- View Cancelled Booking Button -->
-          <v-btn
-            v-if="item.status === 'cancelled'"
-            icon
-            size="small"
-            color="grey"
-            @click.stop="openViewBookingDialog(item)"
-          >
+          <!-- View Booking Button -->
+          <v-btn icon size="small" color="gray" @click.stop="openViewBookingDialog(item)">
             <v-icon>mdi-eye-outline</v-icon>
           </v-btn>
         </div>
       </template>
     </v-data-table>
+
+    <!-- View Booking Dialog -->
+    <<v-dialog v-model="viewBookingDialog" max-width="600px">
+      <v-card>
+        <!-- Dialog Title -->
+        <v-card-title class="text-h6 d-flex align-center">
+          <v-icon class="mr-2">mdi-information-outline</v-icon>
+          Booking Details
+        </v-card-title>
+
+        <!-- Dialog Content -->
+        <v-card-text>
+          <v-row>
+            <v-col cols="12" sm="6">
+              <v-icon color="blue" class="mr-1">mdi-account</v-icon>
+              <strong>User:</strong> {{ selectedApprovedBooking?.userName }}
+            </v-col>
+            <v-col cols="12" sm="6">
+              <v-icon color="blue" class="mr-1">mdi-email</v-icon>
+              <strong>Email:</strong> {{ selectedApprovedBooking?.userEmail }}
+            </v-col>
+            <v-col cols="12" sm="6">
+              <v-icon color="blue" class="mr-1">mdi-home-city-outline</v-icon>
+              <strong>Facility:</strong> {{ selectedApprovedBooking?.facilityName }}
+            </v-col>
+            <v-col cols="12" sm="6">
+              <v-icon color="blue" class="mr-1">mdi-calendar</v-icon>
+              <strong>Date:</strong> {{ formatDate(selectedApprovedBooking?.date) }}
+            </v-col>
+            <v-col cols="12" sm="6">
+              <v-icon color="blue" class="mr-1">mdi-clock-outline</v-icon>
+              <strong>Time:</strong> {{ selectedApprovedBooking?.time }}
+            </v-col>
+            <v-col cols="12" sm="6">
+              <v-icon color="blue" class="mr-1">mdi-text-box-outline</v-icon>
+              <strong>Purpose:</strong> {{ selectedApprovedBooking?.purpose }}
+            </v-col>
+            <v-col cols="12">
+              <v-icon color="blue" class="mr-1">mdi-note-outline</v-icon>
+              <strong>Notes:</strong>
+              {{ selectedApprovedBooking?.notes || 'No additional notes provided.' }}
+            </v-col>
+            <v-col cols="12">
+              <v-icon color="blue" class="mr-1">mdi-check-circle-outline</v-icon>
+              <strong>Status:</strong>
+              <v-chip :color="getStatusColor(selectedApprovedBooking?.status)" small>
+                {{ selectedApprovedBooking?.status }}
+              </v-chip>
+            </v-col>
+          </v-row>
+        </v-card-text>
+
+        <!-- Dialog Actions -->
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="red" text @click="viewBookingDialog = false"> Close </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    
+    <!-- Approval Dialog -->
+    <v-dialog v-model="approvalDialog" max-width="500px">
+      <v-card>
+        <!-- Dialog Title -->
+        <v-card-title class="text-h6 d-flex align-center">
+          <v-icon color="blue" class="mr-2">mdi-alert-circle-outline</v-icon>
+          Approve or Reject Booking
+        </v-card-title>
+
+        <!-- Dialog Content -->
+        <v-card-text>
+          <v-row align="center" justify="center">
+            <v-icon color="orange" size="48">mdi-help-circle-outline</v-icon>
+          </v-row>
+          <p class="text-center mt-4">
+            Are you sure you want to update the status of this booking?
+          </p>
+          <p class="text-center text-caption text-grey">This action cannot be undone.</p>
+        </v-card-text>
+
+        <!-- Dialog Actions -->
+        <v-card-actions class="justify-center">
+          <v-btn color="green" text @click="updateStatus('approved')">
+            <v-icon left>mdi-check-circle-outline</v-icon> Approve
+          </v-btn>
+          <v-btn color="red" text @click="updateStatus('rejected')">
+            <v-icon left>mdi-close-circle-outline</v-icon> Reject
+          </v-btn>
+          <v-btn text @click="approvalDialog = false">
+            <v-icon left>mdi-cancel</v-icon> Cancel
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 

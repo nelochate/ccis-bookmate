@@ -125,7 +125,13 @@ async function deleteBooking() {
         <template #item.status="{ item }">
           <v-chip
             :color="
-              item.status === 'approved' ? 'green' : item.status === 'rejected' ? 'red' : item.status === 'cancelled' ? 'gray' : 'orange'
+              item.status === 'approved'
+                ? 'green'
+                : item.status === 'rejected'
+                  ? 'red'
+                  : item.status === 'cancelled'
+                    ? 'gray'
+                    : 'orange'
             "
             small
           >
@@ -147,6 +153,7 @@ async function deleteBooking() {
           <!-- Cancel Booking -->
           <v-btn
             v-if="item.status === 'pending' || item.status === 'approved'"
+            class="mr-3"
             icon
             size="small"
             @click="confirmCancelBooking(item)"
@@ -212,6 +219,16 @@ async function deleteBooking() {
               <v-list-item-subtitle class="text-caption grey--text">Purpose</v-list-item-subtitle>
             </v-list-item>
 
+            <v-list-item v-if="selectedBooking?.notes">
+              <template #prepend>
+                <v-icon color="primary">mdi-note-outline</v-icon>
+              </template>
+              <v-list-item-title class="font-weight-medium">{{
+                selectedBooking?.notes
+              }}</v-list-item-title>
+              <v-list-item-subtitle class="text-caption grey--text">Notes</v-list-item-subtitle>
+            </v-list-item>
+
             <v-list-item>
               <template #prepend>
                 <v-icon color="primary">mdi-information-outline</v-icon>
@@ -226,8 +243,8 @@ async function deleteBooking() {
         <v-divider></v-divider>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn text color="primary" @click="viewBookingDialog = false">
-            <v-icon left>mdi-close</v-icon> Close
+          <v-btn text color="red" @click="viewBookingDialog = false">
+           Close
           </v-btn>
         </v-card-actions>
       </v-card>
