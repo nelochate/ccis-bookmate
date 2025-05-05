@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 const props = defineProps({
   bookings: Array,
@@ -10,7 +10,7 @@ const props = defineProps({
 const emit = defineEmits(['update-booking-status'])
 
 const headers = [
-  { title: '#', key: 'number', sortable: false }, // Add numbering column
+  { title: '#', key: 'number', sortable: false },
   { title: 'User', key: 'user', sortable: false },
   { title: 'Facility', key: 'facilityName', sortable: true },
   { title: 'Date', key: 'date', sortable: true },
@@ -24,7 +24,20 @@ const approvalDialog = ref(false)
 const viewBookingDialog = ref(false)
 const selectedBooking = ref(null)
 const selectedApprovedBooking = ref(null)
-const notificationMessage = ref(null) // Notification message ref
+const notificationMessage = ref(null)
+const statusFilter = ref('') // Filter for status
+
+// Filtered bookings
+const filteredBookings = computed(() => {
+  let filtered = props.bookings
+
+  // Apply status filter
+  if (statusFilter.value && statusFilter.value !== 'all') {
+    filtered = filtered.filter((booking) => booking.status === statusFilter.value)
+  }
+
+  return filtered
+})
 
 const getStatusColor = (status) => {
   const statusColors = {
@@ -83,10 +96,23 @@ const formatDate = (dateString) => {
     <!-- Loading State -->
     <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
 
+    <!-- Filters -->
+    <v-row class="mb-4">
+      <v-col cols="6" sm="3">
+        <v-select
+          v-model="statusFilter"
+          :items="['all', 'approved', 'pending', 'rejected', 'cancelled']"
+          label="Filter by Status"
+          dense
+          outlined
+        ></v-select>
+      </v-col>
+    </v-row>
+
     <!-- Bookings Table -->
     <v-data-table
       :headers="headers"
-      :items="bookings"
+      :items="filteredBookings"
       :loading="loading"
       :items-per-page="10"
       class="elevation-1 table-with-border"
@@ -162,151 +188,6 @@ const formatDate = (dateString) => {
         </div>
       </template>
     </v-data-table>
-
-    <!-- Booking Approval Dialog -->
-    <v-dialog v-model="approvalDialog" max-width="500">
-      <v-card>
-        <v-card-title>Booking Approval</v-card-title>
-        <v-card-text>
-          <v-list>
-            <v-list-item>
-              <template #prepend>
-                <v-icon>mdi-office-building</v-icon>
-              </template>
-              <v-list-item-title>{{ selectedBooking?.facilityName }}</v-list-item-title>
-              <v-list-item-subtitle>Facility</v-list-item-subtitle>
-            </v-list-item>
-
-            <v-list-item>
-              <template #prepend>
-                <v-icon>mdi-account</v-icon>
-              </template>
-              <v-list-item-title>{{ selectedBooking?.userName }}</v-list-item-title>
-              <v-list-item-subtitle>{{ selectedBooking?.userEmail }}</v-list-item-subtitle>
-            </v-list-item>
-
-            <v-list-item>
-              <template #prepend>
-                <v-icon>mdi-calendar</v-icon>
-              </template>
-              <v-list-item-title>{{ formatDate(selectedBooking?.date) }}</v-list-item-title>
-              <v-list-item-subtitle>Date</v-list-item-subtitle>
-            </v-list-item>
-
-            <v-list-item>
-              <template #prepend>
-                <v-icon>mdi-clock</v-icon>
-              </template>
-              <v-list-item-title>{{ selectedBooking?.time }}</v-list-item-title>
-              <v-list-item-subtitle>Time Slot</v-list-item-subtitle>
-            </v-list-item>
-
-            <v-list-item v-if="selectedBooking?.purpose">
-              <template #prepend>
-                <v-icon>mdi-text</v-icon>
-              </template>
-              <v-list-item-title>{{ selectedBooking?.purpose }}</v-list-item-title>
-              <v-list-item-subtitle>Purpose</v-list-item-subtitle>
-            </v-list-item>
-
-            <v-list-item v-if="selectedBooking?.notes">
-              <template #prepend>
-                <v-icon>mdi-note</v-icon>
-              </template>
-              <v-list-item-title>{{ selectedBooking?.notes }}</v-list-item-title>
-              <v-list-item-subtitle>Notes</v-list-item-subtitle>
-            </v-list-item>
-          </v-list>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="error" @click="updateStatus('rejected')">Reject</v-btn>
-          <v-btn color="success" @click="updateStatus('approved')">Approve</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <!-- View Booking Details -->
-    <v-dialog v-model="viewBookingDialog" max-width="500">
-      <v-card>
-        <v-card-title class="text-h6 font-weight-bold primary--text">
-          <v-icon class="mr-2">mdi-information-outline</v-icon> Booking Details
-        </v-card-title>
-        <v-divider></v-divider>
-        <v-card-text>
-          <v-list dense>
-            <v-list-item>
-              <template #prepend>
-                <v-icon color="primary">mdi-office-building</v-icon>
-              </template>
-              <v-list-item-title class="font-weight-medium">{{
-                selectedApprovedBooking?.facilityName
-              }}</v-list-item-title>
-              <v-list-item-subtitle class="text-caption grey--text">Facility</v-list-item-subtitle>
-            </v-list-item>
-
-            <v-list-item>
-              <template #prepend>
-                <v-icon color="primary">mdi-account</v-icon>
-              </template>
-              <v-list-item-title class="font-weight-medium">{{
-                selectedApprovedBooking?.userName
-              }}</v-list-item-title>
-              <v-list-item-subtitle class="text-caption grey--text">{{
-                selectedApprovedBooking?.userEmail
-              }}</v-list-item-subtitle>
-            </v-list-item>
-
-            <v-list-item>
-              <template #prepend>
-                <v-icon color="primary">mdi-calendar</v-icon>
-              </template>
-              <v-list-item-title class="font-weight-medium">{{
-                formatDate(selectedApprovedBooking?.date)
-              }}</v-list-item-title>
-              <v-list-item-subtitle class="text-caption grey--text">Date</v-list-item-subtitle>
-            </v-list-item>
-
-            <v-list-item>
-              <template #prepend>
-                <v-icon color="primary">mdi-clock</v-icon>
-              </template>
-              <v-list-item-title class="font-weight-medium">{{
-                selectedApprovedBooking?.time
-              }}</v-list-item-title>
-              <v-list-item-subtitle class="text-caption grey--text">Time Slot</v-list-item-subtitle>
-            </v-list-item>
-
-            <v-list-item v-if="selectedApprovedBooking?.purpose">
-              <template #prepend>
-                <v-icon color="primary">mdi-text</v-icon>
-              </template>
-              <v-list-item-title class="font-weight-medium">{{
-                selectedApprovedBooking?.purpose
-              }}</v-list-item-title>
-              <v-list-item-subtitle class="text-caption grey--text">Purpose</v-list-item-subtitle>
-            </v-list-item>
-
-            <v-list-item v-if="selectedApprovedBooking?.notes">
-              <template #prepend>
-                <v-icon color="primary">mdi-note</v-icon>
-              </template>
-              <v-list-item-title class="font-weight-medium">{{
-                selectedApprovedBooking?.notes
-              }}</v-list-item-title>
-              <v-list-item-subtitle class="text-caption grey--text">Notes</v-list-item-subtitle>
-            </v-list-item>
-          </v-list>
-        </v-card-text>
-        <v-divider></v-divider>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn text color="primary" @click="viewBookingDialog = false">
-            <v-icon left>mdi-close</v-icon> Close
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
   </div>
 </template>
 
@@ -324,5 +205,10 @@ const formatDate = (dateString) => {
   border: 0px solid #ccc;
   border-radius: 7px;
   overflow: hidden;
+}
+
+.filters {
+  display: flex;
+  align-items: center;
 }
 </style>

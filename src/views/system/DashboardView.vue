@@ -316,8 +316,9 @@ function openBookingDialog(facility) {
   cursor: pointer;
   transform: translateY(0);
   box-shadow: 10px 4px 6px rgba(0, 0, 0, 0.1);
-  border: 2px solid #14161731; /* Blue darken-4 stroke */
-  border-radius: 8px; /* Optional: Add rounded corners */
+  border: 2px solid #14161731; 
+  border-radius: 8px; 
+  opacity: 0.9;
 }
 
 .stat-card:hover {
