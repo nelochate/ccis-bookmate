@@ -48,9 +48,7 @@ const deleteAccount = async () => {
             @click="router.go(-1)"
             prepend-icon="mdi-arrow-left"
             class="mr-4"
-          >
-            Back
-          </v-btn>
+          ></v-btn>
           <h1 class="text-h4 font-weight-bold">Account Settings</h1>
         </div>
 

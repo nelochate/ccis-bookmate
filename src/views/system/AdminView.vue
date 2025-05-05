@@ -40,12 +40,10 @@ const error = ref(null)
 const successMessage = ref(null)
 
 // Computed properties
-const globalLoading = computed(() => 
-  Object.values(loading.value).some(state => state)
-)
+const globalLoading = computed(() => Object.values(loading.value).some((state) => state))
 
-const pendingApprovalsCount = computed(() => 
-  allBookings.value.filter(b => b.status === 'pending').length
+const pendingApprovalsCount = computed(
+  () => allBookings.value.filter((b) => b.status === 'pending').length,
 )
 
 // Data fetching functions
@@ -73,10 +71,11 @@ async function fetchAllBookings() {
   try {
     loading.value.bookings = true
     error.value = null
-    
+
     const { data: bookingsData, error: bookingsError } = await supabase
       .from('bookings')
-      .select(`
+      .select(
+        `
         id, 
         purpose, 
         date, 
@@ -87,12 +86,13 @@ async function fetchAllBookings() {
         created_at,
         facilities (id, name, is_available),
         user_id
-      `)
+      `,
+      )
       .order('date', { ascending: true })
 
     if (bookingsError) throw bookingsError
 
-    const userIds = [...new Set(bookingsData.map(booking => booking.user_id))]
+    const userIds = [...new Set(bookingsData.map((booking) => booking.user_id))]
 
     const { data: userData, error: userError } = await supabase
       .from('profiles')
@@ -101,23 +101,24 @@ async function fetchAllBookings() {
 
     if (userError) throw userError
 
-    allBookings.value = bookingsData.map(booking => ({
+    allBookings.value = bookingsData.map((booking) => ({
       id: booking.id,
       facilityId: booking.facilities?.id,
       facilityName: booking.facilities?.name || 'Unknown Facility',
       userId: booking.user_id,
-      userName: userData.find(u => u.id === booking.user_id)?.full_name || 
-               userData.find(u => u.id === booking.user_id)?.username || 
-               userData.find(u => u.id === booking.user_id)?.email.split('@')[0] || 
-               'Unknown User',
-      userEmail: userData.find(u => u.id === booking.user_id)?.email || 'No email',
-      userRole: userData.find(u => u.id === booking.user_id)?.role || 'user',
+      userName:
+        userData.find((u) => u.id === booking.user_id)?.full_name ||
+        userData.find((u) => u.id === booking.user_id)?.username ||
+        userData.find((u) => u.id === booking.user_id)?.email.split('@')[0] ||
+        'Unknown User',
+      userEmail: userData.find((u) => u.id === booking.user_id)?.email || 'No email',
+      userRole: userData.find((u) => u.id === booking.user_id)?.role || 'user',
       date: booking.date,
       time: `${booking.start_time} - ${booking.end_time}`,
       purpose: booking.purpose || 'No purpose specified',
       status: booking.status,
       notes: booking.notes,
-      createdAt: booking.created_at
+      createdAt: booking.created_at,
     }))
 
     updateQuickStats()
@@ -141,7 +142,7 @@ async function fetchUsers() {
 
     if (fetchError) throw fetchError
 
-    users.value = data.map(user => ({
+    users.value = data.map((user) => ({
       id: user.id,
       email: user.email,
       name: user.full_name || user.username || user.email.split('@')[0],
@@ -149,7 +150,6 @@ async function fetchUsers() {
       role: user.role || 'user',
       createdAt: user.updated_at,
     }))
-
   } catch (err) {
     error.value = `Error fetching users: ${err.message}`
     console.error('User fetch error:', err)
@@ -160,7 +160,7 @@ async function fetchUsers() {
 
 function updateQuickStats() {
   quickStats.value[0].value = facilities.value.length.toString()
-  quickStats.value[1].value = facilities.value.filter(f => f.is_available).length.toString()
+  quickStats.value[1].value = facilities.value.filter((f) => f.is_available).length.toString()
   quickStats.value[2].value = allBookings.value.length.toString()
   quickStats.value[3].value = pendingApprovalsCount.value.toString()
 }
@@ -171,22 +171,16 @@ async function handleBookingStatusUpdate({ id, status }) {
     error.value = null
     loading.value.bookings = true
 
-    const { error: updateError } = await supabase
-      .from('bookings')
-      .update({ status })
-      .eq('id', id)
+    const { error: updateError } = await supabase.from('bookings').update({ status }).eq('id', id)
 
     if (updateError) throw updateError
 
-    successMessage.value = `Booking ${status} successfully`
-    
     // Optimistic update
-    const bookingIndex = allBookings.value.findIndex(b => b.id === id)
+    const bookingIndex = allBookings.value.findIndex((b) => b.id === id)
     if (bookingIndex !== -1) {
       allBookings.value[bookingIndex].status = status
       updateQuickStats()
     }
-    
   } catch (err) {
     error.value = `Failed to update booking: ${err.message}`
     console.error('Booking update error:', err)
@@ -205,7 +199,9 @@ function clearMessages() {
 // Lifecycle hooks
 onMounted(async () => {
   try {
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
     if (!user) {
       router.push('/login')
       return
@@ -227,29 +223,33 @@ onMounted(async () => {
       return
     }
 
-    await Promise.all([
-      fetchFacilities(),
-      fetchAllBookings(),
-      fetchUsers()
-    ])
+    await Promise.all([fetchFacilities(), fetchAllBookings(), fetchUsers()])
 
     // Set up realtime subscriptions
     const facilitiesChannel = supabase
       .channel('admin_facilities_changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'facilities'
-      }, () => fetchFacilities())
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'facilities',
+        },
+        () => fetchFacilities(),
+      )
       .subscribe()
 
     const bookingsChannel = supabase
       .channel('admin_bookings_changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'bookings'
-      }, () => fetchAllBookings())
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'bookings',
+        },
+        () => fetchAllBookings(),
+      )
       .subscribe()
 
     channels.value = [facilitiesChannel, bookingsChannel]
@@ -260,7 +260,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  channels.value.forEach(channel => {
+  channels.value.forEach((channel) => {
     supabase.removeChannel(channel)
   })
 })
@@ -271,7 +271,7 @@ onUnmounted(() => {
     <template #content>
       <v-container fluid class="pa-4 pa-sm-6">
         <!-- Messages Section -->
-        <v-row v-if="error || successMessage" class="mb-4">
+        <v-row v-if="error" class="mb-4">
           <v-col cols="12">
             <v-alert
               v-if="error"
@@ -282,31 +282,24 @@ onUnmounted(() => {
             >
               {{ error }}
             </v-alert>
-            <v-alert
-              v-if="successMessage"
-              type="success"
-              dismissible
-              @click:close="clearMessages"
-              class="mb-2"
-            >
-              {{ successMessage }}
-            </v-alert>
           </v-col>
         </v-row>
 
-        <!-- Header Section -->
-        <v-row class="mb-4 mb-sm-6">
+        <!-- Header and Quick Stats -->
+        <v-row class="header-quick-stats mb-6">
+          <!-- Header Section -->
           <v-col cols="12">
             <v-card
               class="pa-4"
               :color="theme === 'light' ? 'blue-grey-darken-3' : 'blue-grey-darken-4'"
+              elevation="0"
             >
               <div class="d-flex justify-space-between align-center">
                 <div>
-                  <h1 class="text-h5 text-sm-h4 font-weight-bold">Welcome To Your Dashboard Admin!</h1>
-                  <p class="text-subtitle-1 mt-1">
-                    Manage facilities, bookings, and users
-                  </p>
+                  <h1 class="text-h5 text-sm-h4 font-weight-bold">
+                    Welcome To Your Dashboard Admin!
+                  </h1>
+                  <p class="text-subtitle-1 mt-1">Manage facilities, bookings, and users</p>
                 </div>
                 <v-progress-circular
                   v-if="globalLoading"
@@ -318,17 +311,9 @@ onUnmounted(() => {
               </div>
             </v-card>
           </v-col>
-        </v-row>
 
-        <!-- Quick Stats -->
-        <v-row class="mb-6">
-          <v-col 
-            v-for="stat in quickStats" 
-            :key="stat.title" 
-            cols="12" 
-            sm="6" 
-            md="3"
-          >
+          <!-- Quick Stats -->
+          <v-col v-for="stat in quickStats" :key="stat.title" cols="12" sm="6" md="3">
             <v-card class="quick-stat-card">
               <v-card-text class="d-flex justify-space-between align-center">
                 <div>
@@ -342,12 +327,7 @@ onUnmounted(() => {
         </v-row>
 
         <!-- Tabs for Different Views -->
-        <v-tabs 
-          v-model="tab" 
-          grow 
-          class="mb-6 custom-tabs" 
-          :touch="false"
-        >
+        <v-tabs v-model="tab" grow class="mb-6 custom-tabs" :touch="false">
           <v-tab :touch="false" value="facilities">
             <v-icon start>mdi-office-building</v-icon>
             Facilities
@@ -385,9 +365,9 @@ onUnmounted(() => {
 
           <!-- Users Tab -->
           <v-window-item value="users">
-            <AdminUsersTab 
-              :users="users" 
-              :loading="loading.users" 
+            <AdminUsersTab
+              :users="users"
+              :loading="loading.users"
               :error="error"
               @refresh="fetchUsers"
             />
@@ -405,5 +385,27 @@ onUnmounted(() => {
 
 .v-tab {
   min-width: 120px;
+}
+
+.quick-stat-card {
+  transition: all 0.3s ease;
+  cursor: pointer;
+  transform: translateY(0);
+  box-shadow: 10px 4px 6px rgba(0, 0, 0, 0.1);
+  border: 2px solid #282c302b;
+  border-radius: 8px;
+}
+
+.quick-stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.header-quick-stats {
+  background-image: url('img/hiraya-blurred.png');
+  background-size: cover;
+  background-position: center;
+  padding: 20px;
+  border-radius: 8px; 
 }
 </style>
