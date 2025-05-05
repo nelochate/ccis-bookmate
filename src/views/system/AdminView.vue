@@ -402,7 +402,7 @@ onUnmounted(() => {
 }
 
 .header-quick-stats {
-  background-image: url('img/hiraya-blurred.png');
+  background-image: url('/img/hiraya-blurred.png');
   background-size: cover;
   background-position: center;
   padding: 20px;
