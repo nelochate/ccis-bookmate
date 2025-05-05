@@ -120,7 +120,7 @@ const formatDate = (dateString) => {
             v-if="item.status === 'pending'"
             icon
             size="small"
-            color="green"
+            color="orange"
             class="mr-2"
             @click.stop="openApprovalDialog(item)"
           >

@@ -193,8 +193,9 @@ function openBookingDialog(facility) {
   <AppLayout>
     <template #content>
       <v-container fluid>
-        <!-- Header Card with hover effect -->
-        <v-row class="mb-6 d-flex justify-center align-center">
+        <!-- Header and Stats Section -->
+        <v-row class="header-stats mb-6">
+          <!-- Header Card -->
           <v-col cols="12">
             <v-card
               :color="theme === 'light' ? 'blue-grey-darken-4' : 'blue-grey-darken-4'"
@@ -215,10 +216,8 @@ function openBookingDialog(facility) {
               </v-row>
             </v-card>
           </v-col>
-        </v-row>
 
-        <!-- Stats Cards with hover effects -->
-        <v-row class="mb-6">
+          <!-- Stats Cards -->
           <v-col v-for="stat in quickStats" :key="stat.title" cols="12" sm="6" md="3">
             <v-card class="stat-card" hover>
               <v-card-text class="d-flex justify-space-between align-center">
@@ -293,6 +292,14 @@ function openBookingDialog(facility) {
 </template>
 
 <style scoped>
+.header-stats {
+  background-image: url('img/hiraya-blurred.png'); 
+  background-size: cover;
+  background-position: center;
+  padding: 20px; 
+  border-radius: 8px; 
+}
+
 .header-card {
   transition: all 0.3s ease;
   transform: translateY(0);
