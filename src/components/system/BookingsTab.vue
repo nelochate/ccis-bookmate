@@ -169,6 +169,7 @@ async function handleSubmitBooking(bookingData) {
         </template>
         <template #item.actions="{ item }">
           <v-btn
+            class="mr-3"
             icon
             size="small"
             color="gray"
@@ -208,53 +209,69 @@ async function handleSubmitBooking(bookingData) {
     <!-- View Booking Dialog -->
     <v-dialog v-model="viewBookingDialog" max-width="500">
       <v-card>
-        <v-card-title>Booking Details</v-card-title>
+        <v-card-title class="text-h6 font-weight-bold primary--text">
+          <v-icon class="mr-2">mdi-information-outline</v-icon> Booking Details
+        </v-card-title>
+        <v-divider></v-divider>
         <v-card-text>
-          <v-list>
+          <v-list dense>
             <v-list-item>
               <template #prepend>
-                <v-icon>mdi-office-building</v-icon>
+                <v-icon color="primary">mdi-office-building</v-icon>
               </template>
-              <v-list-item-title>{{ selectedBooking?.facilityName }}</v-list-item-title>
-              <v-list-item-subtitle>Facility</v-list-item-subtitle>
+              <v-list-item-title class="font-weight-medium">{{
+                selectedBooking?.facilityName
+              }}</v-list-item-title>
+              <v-list-item-subtitle class="text-caption grey--text">Facility</v-list-item-subtitle>
             </v-list-item>
 
             <v-list-item>
               <template #prepend>
-                <v-icon>mdi-calendar</v-icon>
+                <v-icon color="primary">mdi-calendar</v-icon>
               </template>
-              <v-list-item-title>{{ selectedBooking?.date }}</v-list-item-title>
-              <v-list-item-subtitle>Date</v-list-item-subtitle>
+              <v-list-item-title class="font-weight-medium">{{
+                selectedBooking?.date
+              }}</v-list-item-title>
+              <v-list-item-subtitle class="text-caption grey--text">Date</v-list-item-subtitle>
             </v-list-item>
 
             <v-list-item>
               <template #prepend>
-                <v-icon>mdi-clock</v-icon>
+                <v-icon color="primary">mdi-clock</v-icon>
               </template>
-              <v-list-item-title>{{ selectedBooking?.time }}</v-list-item-title>
-              <v-list-item-subtitle>Time Slot</v-list-item-subtitle>
+              <v-list-item-title class="font-weight-medium">{{
+                selectedBooking?.time
+              }}</v-list-item-title>
+              <v-list-item-subtitle class="text-caption grey--text">Time Slot</v-list-item-subtitle>
+            </v-list-item>
+
+            <v-list-item v-if="selectedBooking?.purpose">
+              <template #prepend>
+                <v-icon color="primary">mdi-text</v-icon>
+              </template>
+              <v-list-item-title class="font-weight-medium">{{
+                selectedBooking?.purpose
+              }}</v-list-item-title>
+              <v-list-item-subtitle class="text-caption grey--text">Purpose</v-list-item-subtitle>
             </v-list-item>
 
             <v-list-item>
               <template #prepend>
-                <v-icon>mdi-text</v-icon>
+                <v-icon color="primary">mdi-information-outline</v-icon>
               </template>
-              <v-list-item-title>{{ selectedBooking?.purpose }}</v-list-item-title>
-              <v-list-item-subtitle>Purpose</v-list-item-subtitle>
-            </v-list-item>
-
-            <v-list-item>
-              <template #prepend>
-                <v-icon>mdi-information-outline</v-icon>
-              </template>
-              <v-list-item-title>{{ selectedBooking?.status }}</v-list-item-title>
-              <v-list-item-subtitle>Status</v-list-item-subtitle>
+              <v-list-item-title class="font-weight-medium">{{
+                selectedBooking?.status
+              }}</v-list-item-title>
+              <v-list-item-subtitle class="text-caption grey--text">Status</v-list-item-subtitle>
             </v-list-item>
           </v-list>
         </v-card-text>
+        <v-divider></v-divider>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn text @click="viewBookingDialog = false">Close</v-btn>
+          <v-btn text color="primary" @click="viewBookingDialog = false">
+            <v-icon left>mdi-close</v-icon> Close
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

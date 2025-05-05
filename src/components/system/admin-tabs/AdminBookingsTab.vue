@@ -10,6 +10,7 @@ const props = defineProps({
 const emit = defineEmits(['update-booking-status'])
 
 const headers = [
+  { title: '#', key: 'number', sortable: false }, // Add numbering column
   { title: 'User', key: 'user', sortable: false },
   { title: 'Facility', key: 'facilityName', sortable: true },
   { title: 'Date', key: 'date', sortable: true },
@@ -23,6 +24,7 @@ const approvalDialog = ref(false)
 const viewBookingDialog = ref(false)
 const selectedBooking = ref(null)
 const selectedApprovedBooking = ref(null)
+const notificationMessage = ref(null) // Notification message ref
 
 const getStatusColor = (status) => {
   const statusColors = {
@@ -50,6 +52,14 @@ const updateStatus = (status) => {
     status,
   })
   approvalDialog.value = false
+
+  // Set notification message
+  notificationMessage.value = `Booking ${status} successfully!`
+
+  // Clear notification after 2 seconds
+  setTimeout(() => {
+    notificationMessage.value = null
+  }, 2000)
 }
 
 const formatDate = (dateString) => {
@@ -60,6 +70,11 @@ const formatDate = (dateString) => {
 
 <template>
   <div class="admin-bookings-tab">
+    <!-- Notification -->
+    <v-alert v-if="notificationMessage" type="success" class="mb-4" transition="scale-transition">
+      {{ notificationMessage }}
+    </v-alert>
+
     <!-- Error State -->
     <v-alert v-if="error" type="error" class="mb-4">
       {{ error }}
@@ -76,6 +91,11 @@ const formatDate = (dateString) => {
       :items-per-page="10"
       class="elevation-1 table-with-border"
     >
+      <!-- Numbering Column -->
+      <template #item.number="{ index }">
+        {{ index + 1 }}
+      </template>
+
       <template #item.user="{ item }">
         <div>
           <div>{{ item.userName }}</div>
@@ -206,64 +226,84 @@ const formatDate = (dateString) => {
       </v-card>
     </v-dialog>
 
-    <!-- View Approved Booking Dialog -->
+    <!-- View Booking Details -->
     <v-dialog v-model="viewBookingDialog" max-width="500">
       <v-card>
-        <v-card-title>Approved Booking Details</v-card-title>
+        <v-card-title class="text-h6 font-weight-bold primary--text">
+          <v-icon class="mr-2">mdi-information-outline</v-icon> Booking Details
+        </v-card-title>
+        <v-divider></v-divider>
         <v-card-text>
-          <v-list>
+          <v-list dense>
             <v-list-item>
               <template #prepend>
-                <v-icon>mdi-office-building</v-icon>
+                <v-icon color="primary">mdi-office-building</v-icon>
               </template>
-              <v-list-item-title>{{ selectedApprovedBooking?.facilityName }}</v-list-item-title>
-              <v-list-item-subtitle>Facility</v-list-item-subtitle>
+              <v-list-item-title class="font-weight-medium">{{
+                selectedApprovedBooking?.facilityName
+              }}</v-list-item-title>
+              <v-list-item-subtitle class="text-caption grey--text">Facility</v-list-item-subtitle>
             </v-list-item>
 
             <v-list-item>
               <template #prepend>
-                <v-icon>mdi-account</v-icon>
+                <v-icon color="primary">mdi-account</v-icon>
               </template>
-              <v-list-item-title>{{ selectedApprovedBooking?.userName }}</v-list-item-title>
-              <v-list-item-subtitle>{{ selectedApprovedBooking?.userEmail }}</v-list-item-subtitle>
+              <v-list-item-title class="font-weight-medium">{{
+                selectedApprovedBooking?.userName
+              }}</v-list-item-title>
+              <v-list-item-subtitle class="text-caption grey--text">{{
+                selectedApprovedBooking?.userEmail
+              }}</v-list-item-subtitle>
             </v-list-item>
 
             <v-list-item>
               <template #prepend>
-                <v-icon>mdi-calendar</v-icon>
+                <v-icon color="primary">mdi-calendar</v-icon>
               </template>
-              <v-list-item-title>{{ formatDate(selectedApprovedBooking?.date) }}</v-list-item-title>
-              <v-list-item-subtitle>Date</v-list-item-subtitle>
+              <v-list-item-title class="font-weight-medium">{{
+                formatDate(selectedApprovedBooking?.date)
+              }}</v-list-item-title>
+              <v-list-item-subtitle class="text-caption grey--text">Date</v-list-item-subtitle>
             </v-list-item>
 
             <v-list-item>
               <template #prepend>
-                <v-icon>mdi-clock</v-icon>
+                <v-icon color="primary">mdi-clock</v-icon>
               </template>
-              <v-list-item-title>{{ selectedApprovedBooking?.time }}</v-list-item-title>
-              <v-list-item-subtitle>Time Slot</v-list-item-subtitle>
+              <v-list-item-title class="font-weight-medium">{{
+                selectedApprovedBooking?.time
+              }}</v-list-item-title>
+              <v-list-item-subtitle class="text-caption grey--text">Time Slot</v-list-item-subtitle>
             </v-list-item>
 
             <v-list-item v-if="selectedApprovedBooking?.purpose">
               <template #prepend>
-                <v-icon>mdi-text</v-icon>
+                <v-icon color="primary">mdi-text</v-icon>
               </template>
-              <v-list-item-title>{{ selectedApprovedBooking?.purpose }}</v-list-item-title>
-              <v-list-item-subtitle>Purpose</v-list-item-subtitle>
+              <v-list-item-title class="font-weight-medium">{{
+                selectedApprovedBooking?.purpose
+              }}</v-list-item-title>
+              <v-list-item-subtitle class="text-caption grey--text">Purpose</v-list-item-subtitle>
             </v-list-item>
 
             <v-list-item v-if="selectedApprovedBooking?.notes">
               <template #prepend>
-                <v-icon>mdi-note</v-icon>
+                <v-icon color="primary">mdi-note</v-icon>
               </template>
-              <v-list-item-title>{{ selectedApprovedBooking?.notes }}</v-list-item-title>
-              <v-list-item-subtitle>Notes</v-list-item-subtitle>
+              <v-list-item-title class="font-weight-medium">{{
+                selectedApprovedBooking?.notes
+              }}</v-list-item-title>
+              <v-list-item-subtitle class="text-caption grey--text">Notes</v-list-item-subtitle>
             </v-list-item>
           </v-list>
         </v-card-text>
+        <v-divider></v-divider>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn text @click="viewBookingDialog = false">Close</v-btn>
+          <v-btn text color="primary" @click="viewBookingDialog = false">
+            <v-icon left>mdi-close</v-icon> Close
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -281,7 +321,7 @@ const formatDate = (dateString) => {
 
 /* Add border styling for the table */
 .table-with-border {
-  border: 0.px solid #ccc;
+  border: 0px solid #ccc;
   border-radius: 7px;
   overflow: hidden;
 }

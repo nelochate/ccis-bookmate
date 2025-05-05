@@ -16,22 +16,29 @@ const formAction = ref({
   ...formActionDefault,
 })
 
+const notificationMessage = ref(null) // Notification message ref
+
 // Logout Functionality
 const onLogout = async () => {
   try {
-    formAction.value = { ...formActionDefault, formProcess: true };
+    formAction.value = { ...formActionDefault, formProcess: true }
     
-    await supabase.auth.signOut();
-    authStore.$reset();
-    formAction.value.formProcess = false;
-    
-    // This will force components to reinitialize
-    router.push('/');
-    window.location.reload();
-    
+    await supabase.auth.signOut()
+    authStore.$reset()
+    formAction.value.formProcess = false
+
+    // Show notification
+    notificationMessage.value = 'You have successfully logged out.'
+    setTimeout(() => {
+      notificationMessage.value = null
+    }, 2000) // Clear message after 2 seconds
+
+    // Redirect to home page
+    router.push('/')
+    window.location.reload()
   } catch (err) {
-    formAction.value.formProcess = false;
-    console.error('Logout error:', err);
+    formAction.value.formProcess = false
+    console.error('Logout error:', err)
   }
 }
 </script>
@@ -50,6 +57,16 @@ const onLogout = async () => {
 
     <v-card class="mt-1">
       <v-card-text>
+        <!-- Notification -->
+        <v-alert
+          v-if="notificationMessage"
+          type="success"
+          class="mb-4"
+          transition="scale-transition"
+        >
+          {{ notificationMessage }}
+        </v-alert>
+
         <v-list>
           <v-list-item
             :subtitle="authStore.userData.email"

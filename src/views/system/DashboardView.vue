@@ -307,6 +307,10 @@ function openBookingDialog(facility) {
 .stat-card {
   transition: all 0.3s ease;
   cursor: pointer;
+  transform: translateY(0);
+  box-shadow: 10px 4px 6px rgba(0, 0, 0, 0.1);
+  border: 2px solid #14161731; /* Blue darken-4 stroke */
+  border-radius: 8px; /* Optional: Add rounded corners */
 }
 
 .stat-card:hover {
@@ -326,19 +330,21 @@ function openBookingDialog(facility) {
   transition: all 0.3s ease;
   position: relative;
   padding: 10px 20px;
-  border: 2px solid transparent; 
+  border: 2px solid transparent;
   border-radius: 8px;
+  background-color: #2c353e; /* Blue darken-4 */
+  color: white; /* Ensure text is visible on dark background */
 }
 
 .tab-item:hover {
-  background-color: rgba(0, 0, 0, 0.05); 
-  border-color: var(--v-primary-base); 
+  background-color: #1c2430a1; /* Slightly darker shade for hover effect */
+  border-color: var(--v-primary-base);
 }
 
 .tab-item--active {
   background-color: var(--v-primary-lighten5);
-  border-color: var(--v-primary-base); 
-  color: var(--v-primary-darken2); 
+  border-color: var(--v-primary-base);
+  color: var(--v-primary-darken2);
   font-weight: bold;
 }
 

@@ -178,15 +178,12 @@ async function handleBookingStatusUpdate({ id, status }) {
 
     if (updateError) throw updateError
 
-    successMessage.value = `Booking ${status} successfully`
-    
     // Optimistic update
     const bookingIndex = allBookings.value.findIndex(b => b.id === id)
     if (bookingIndex !== -1) {
       allBookings.value[bookingIndex].status = status
       updateQuickStats()
     }
-    
   } catch (err) {
     error.value = `Failed to update booking: ${err.message}`
     console.error('Booking update error:', err)
@@ -271,7 +268,7 @@ onUnmounted(() => {
     <template #content>
       <v-container fluid class="pa-4 pa-sm-6">
         <!-- Messages Section -->
-        <v-row v-if="error || successMessage" class="mb-4">
+        <v-row v-if="error" class="mb-4">
           <v-col cols="12">
             <v-alert
               v-if="error"
@@ -281,15 +278,6 @@ onUnmounted(() => {
               class="mb-2"
             >
               {{ error }}
-            </v-alert>
-            <v-alert
-              v-if="successMessage"
-              type="success"
-              dismissible
-              @click:close="clearMessages"
-              class="mb-2"
-            >
-              {{ successMessage }}
             </v-alert>
           </v-col>
         </v-row>
@@ -405,5 +393,19 @@ onUnmounted(() => {
 
 .v-tab {
   min-width: 120px;
+}
+
+.quick-stat-card {
+  transition: all 0.3s ease;
+  cursor: pointer;
+  transform: translateY(0);
+  box-shadow: 10px 4px 6px rgba(0, 0, 0, 0.1);
+  border: 2px solid #282c302b; 
+  border-radius: 8px; 
+}
+
+.quick-stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
 </style>

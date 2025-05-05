@@ -132,7 +132,7 @@ onMounted(async () => {
                 small
                 class="facility-status"
               >
-                {{ facility.is_available ? 'Available' : 'Booked' }}
+                {{ facility.is_available ? 'Available' : 'Fully Booked' }}
               </v-chip>
             </div>
 
