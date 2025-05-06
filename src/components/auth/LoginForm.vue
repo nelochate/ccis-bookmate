@@ -119,8 +119,23 @@ const onFormSubmit = () => {
       {{ formAction.formErrorMessage }}
     </v-alert>
 
-    <v-btn class="mt-2" type="submit" block color="blue-grey-darken-3" prepend-icon="mdi-login"
-      >Login</v-btn
+    <v-btn
+      class="mt-2"
+      type="submit"
+      block
+      color="blue-grey-darken-3"
+      prepend-icon="mdi-login"
+      :loading="formAction.formProcess" 
+      :disabled="formAction.formProcess" 
     >
+      <template v-slot:loader>
+        <v-progress-circular
+          indeterminate
+          color="white"
+          size="20"
+        ></v-progress-circular>
+      </template>
+      Login
+    </v-btn>
   </v-form>
 </template>
